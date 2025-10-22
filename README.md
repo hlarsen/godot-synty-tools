@@ -32,4 +32,4 @@ meshes, bones, materials, and other stuff like that.
 
 ## License
 
-MIT, but if your commercial project does well please consider making a donation <3
+MIT, but if your commercial project does well please consider making a donation =)
