@@ -29,3 +29,7 @@ LLM-generated code anywhere.
 
 My repo of [Blender Scripts](https://github.com/hlarsen/game-asset-blender-scripts) may be useful, it has code around
 meshes, bones, materials, and other stuff like that.
+
+## License
+
+MIT, but if your commercial project does well please consider making a donation <3
