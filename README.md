@@ -24,6 +24,9 @@ AnimationLibraries for the main folders.
 You can add use these new Resource files in the AnimationPlayer of a character who is properly mapped to Godot's
 `SkeletonProfileHumanoid`.
 
+Please note that there appears to be a race condition or some other issue I can't pin down... if you get an error
+when it's trying to re-import files, just try to re-run it again and see if it works, maybe restart the project.
+
 ### Feedback and Future Work
 
 The bone map versions in `bone_maps` should match the asset pack versions. The bone maps are an indication of what
