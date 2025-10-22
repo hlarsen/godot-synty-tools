@@ -1,0 +1,6 @@
+# IDEs
+.idea/
+.vscode/
+
+# Godot (this repo is symlinked to a Godot project for development)
+*.uid
