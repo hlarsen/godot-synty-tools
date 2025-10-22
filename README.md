@@ -13,6 +13,17 @@ characters/animations.
 
 I have some Blender scripts in another repo that will clean up the FBX files, fixing materials and a few other niceties.
 
+### Features
+
+#### Base Locomotion Export
+
+The Synty Base Locomotion source files do not have a proper T-Pose Rest Pose, so adding them to characters that do have
+one is an issue. Pass in your `Animations/Polygon` folder and the addon will output fixed Animation files as well as
+AnimationLibraries for the main folders.
+
+You can add use these new Resource files in the AnimationPlayer of a character who is properly mapped to Godot's
+`SkeletonProfileHumanoid`.
+
 ### Feedback and Future Work
 
 The bone map versions in `bone_maps` should match the asset pack versions. The bone maps are an indication of what
@@ -20,6 +31,13 @@ packs I have licenses for - if anyone wants to say thanks by gifting me licenses
 well ;)
 
 If there are any issues, please let me know.
+
+## Usage
+
+Install the addon to `addons` as normal and enable it in Project Settings > Plugins. You should now be able to launch
+the addon at `Project Settings > Tools > Godot Synty Tools`.
+
+Make sure the Output tab is selected so you can see the script output.
 
 ## Notes
 

@@ -16,7 +16,7 @@ var run_button: Button
 const ANIM_BONE_MAP_PATH: String = "res://addons/godot-synty-tools/bone_maps/base_locomotion_v3.tres"
 # The T-Pose animation we need to use as a RESET for the other animations
 const ANIM_TPOSE_PATH: String = "Neutral/Additive/TPose/A_TPose_Neut.fbx"
-const DEFAULT_IMPORT_PATH: String = "res://temp_import"
+const DEFAULT_IMPORT_PATH_BASE: String = "res://godot-synty-tools-temp-import"
 const EXPORT_PATH: String = "res://godot-synty-tools-output/"
 # To properly track re-imports we have to listen for signals that reports each file was re-imported
 # Sometimes there are issues so we give it a max timeout to wait so we're not stuck
@@ -185,7 +185,7 @@ func _on_run_button_press() -> void:
 
 	# use a temp folder inside the project
 	# i'd rather use DirAccess.create_temp() but that lives outside the editor fs
-	var temp_dir_path: String = DEFAULT_IMPORT_PATH
+	var temp_dir_path: String = DEFAULT_IMPORT_PATH_BASE + "-"+ str(Time.get_unix_time_from_system())
 	var root_dir: DirAccess = DirAccess.open("res://")
 	if root_dir.dir_exists(temp_dir_path):
 		print("Clearing temp directory before new run...")
@@ -257,7 +257,7 @@ func _on_run_button_press() -> void:
 	print("Exporting fixed animations...")
 	var export_subdir: String = EXPORT_PATH.path_join("base_locomotion_animations")
 	root_dir.make_dir_recursive(export_subdir)
-	_export_animation_res_files(anim_files_with_tpose, export_subdir)
+	_export_animation_res_files(anim_files_with_tpose, export_subdir, temp_dir_path)
 	_create_animation_libraries(export_subdir.path_join("Polygon"))
 
 	# let's get rid of our temp directory
@@ -294,7 +294,7 @@ func _export_animation_rest_pose_res_files(src_animation, dst_dir) -> String:
 
 	return anim_path
 
-func _export_animation_res_files(animation_files, dst_dir) -> void:
+func _export_animation_res_files(animation_files, dst_dir, temp_dir_path) -> void:
 	var dir: DirAccess = DirAccess.open("res://")
 
 	for src_animation in animation_files:
@@ -310,7 +310,7 @@ func _export_animation_res_files(animation_files, dst_dir) -> void:
 					var anim: Animation = node.get_animation(anim_name)
 					if anim:
 						# compute subdir relative to res://
-						var subdir = src_animation.replace(DEFAULT_IMPORT_PATH, "").get_base_dir()
+						var subdir = src_animation.replace(temp_dir_path, "").get_base_dir()
 						var full_dst_dir = dst_dir.path_join(subdir)
 						dir.make_dir_recursive(full_dst_dir)
 						
