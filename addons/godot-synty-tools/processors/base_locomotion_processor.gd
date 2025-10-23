@@ -139,10 +139,11 @@ func process():
 	# create the res files
 	print("Exporting fixed animations...")
 	var export_subdir: String = EXPORT_PATH.path_join("base_locomotion_animations")
+	print("Export Subdir: " + export_subdir)
 	_export_animation_res_files(anim_files_fixed_polygon, export_subdir, temp_dir_path)
 	_export_animation_res_files(anim_files_fixed_sidekick, export_subdir, temp_dir_path)
-	var export_subdir_polygon: String = export_subdir.path_join("Animations/Polygon")
-	var export_subdir_sidekick: String = export_subdir.path_join("Animations/Sidekick")
+	var export_subdir_polygon: String = export_subdir.path_join("Polygon")
+	var export_subdir_sidekick: String = export_subdir.path_join("Sidekick")
 	_create_animation_libraries(export_subdir_polygon)
 	_create_animation_libraries(export_subdir_sidekick)
 
@@ -197,7 +198,7 @@ func _export_animation_res_files(animation_files, dst_dir, temp_dir_path) -> voi
 					if anim:
 						# compute subdir relative to res://
 						var subdir = src_animation.replace(temp_dir_path, "").get_base_dir()
-						var full_dst_dir = dst_dir.path_join(subdir)
+						var full_dst_dir = dst_dir.path_join(subdir).replace("/Animations/", "/")
 						dir.make_dir_recursive(full_dst_dir)
 						
 						var anim_path = full_dst_dir.path_join("%s.res" % anim_name)

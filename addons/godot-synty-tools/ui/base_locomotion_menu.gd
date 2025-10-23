@@ -134,7 +134,7 @@ func _on_run_button_press() -> void:
 	print("Running Base Locomotion processing with folder: ", selected_folder_path)
 	run_button.disabled = true
 	select_folder_button.disabled = true
-	status_label.text = "Processing started, see Output tab for logs"
+	status_label.text = "Processing started, do not interact with the editor!\nSee the Output tab for logs."
 	status_label.visible = true
 	select_folder_label.visible = false
 
