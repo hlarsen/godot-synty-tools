@@ -1,16 +1,15 @@
 @tool
 extends EditorPlugin
 
-var popup_window: Window
-var main_container: VBoxContainer
 var button_grid: Control
 var current_menu_stack: Array = []
+var main_container: VBoxContainer
 var menu_builders: Dictionary = {}
-
+var popup_window: Window
 var plugin_name: String = "Godot Synty Tools"
 
 # Submenus
-var base_locomotion_menu# : BaseMenu
+var base_locomotion_menu: BaseMenu
 var scifi_city_menu: BaseMenu
 
 func _ready():
@@ -146,7 +145,7 @@ func _show_main_menu():
 	scifi_city_btn.text = "Sci-Fi City"
 	scifi_city_btn.custom_minimum_size = Vector2(200, 60)
 	scifi_city_btn.pressed.connect(func(): _show_submenu("scifi_city"))
-#	button_row.add_child(scifi_city_btn)
+	button_row.add_child(scifi_city_btn)
 
 	button_grid.add_child(button_row)
 

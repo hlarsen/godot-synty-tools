@@ -2,68 +2,42 @@
 extends BaseProcessor
 class_name BaseLocomotionProcessor
 
-signal selected_folder_changed(path: String)
-signal validation_changed(is_valid: bool)
+#signal selected_folder_changed(path: String)
 
 var selected_folder_path: String = ""
 
-# Base Locomotion Bone Map
+# Base Locomotion Bone Maps
 const ANIM_BONE_MAP_POLYGON: String = "res://addons/godot-synty-tools/bone_maps/base_locomotion_v3_polygon.tres"
-# NOTE: we're not currently applying the Sidekick bonemap because it works without them and is weird with them
-# also getting a this but the animations work: Condition "p_animation_library.is_null()" is true. Returning: StringName()
 const ANIM_BONE_MAP_SIDEKICK: String = "res://addons/godot-synty-tools/bone_maps/base_locomotion_v3_sidekick.tres"
 # The T-Pose animation we need to use as a RESET for the other animations
 const ANIM_TPOSE_PATH_POLYGON: String = "Polygon/Neutral/Additive/TPose/A_TPose_Neut.fbx"
 const ANIM_TPOSE_PATH_SIDEKICK: String = "Sidekick/Neutral/Additive/TPose/A_MOD_BL_TPose_Neut.fbx"
-const TEMP_IMPORT_PATH_BASE: String = "res://godot-synty-tools-temp-import"
+const DELETE_TEMP_DIR: bool = true
 const EXPORT_PATH: String = "res://godot-synty-tools-output/"
 # To properly track re-imports we have to listen for signals that reports each file was re-imported
 # Sometimes there are issues so we give it a max timeout to wait so we're not stuck
 const IMPORT_WAIT_TIMEOUT: int = 60
+const RESET_ANIM_NAME: String = "RESET"
+const TEMP_IMPORT_PATH_BASE: String = "res://godot-synty-tools-temp-import"
 
 func set_folder(path: String) -> void:
 	selected_folder_path = path
-	emit_signal("selected_folder_changed", path)
-	_validate()
+#	emit_signal("selected_folder_changed", path)
 
-func validate_inputs() -> bool:
-	if selected_folder_path.is_empty():
-		return false
-	
-	var dir: DirAccess = DirAccess.open(selected_folder_path)
-	if dir == null:
-		return false
-	
-	# Add your specific validation logic here
-	# For example, check for required files/folders
-
-	return true
-
-func get_validation_error() -> String:
-	if selected_folder_path.is_empty():
-		return "No folder selected"
-	return "Invalid folder structure"
-
-func _validate() -> void:
-	var is_valid: bool = validate_inputs()
-	emit_signal("validation_changed", is_valid)
-
-# TODO: add back bool return
-func process():
-	update_status("Processing started...")
-	
+func process() -> bool:
 	print("Clearing output directory before new run...")
 	print("Deleting directory " + EXPORT_PATH)
 	var err: int = FileUtils.delete_directory_recursive(EXPORT_PATH)
 	if not err == OK:
 		push_error("Error deleting directory: " + EXPORT_PATH)
-		return
+		return false
 
 	# use a temp folder inside the project
 	# i'd rather use DirAccess.create_temp() but that lives outside the editor fs
 	var temp_dir_path: String = TEMP_IMPORT_PATH_BASE + "-"+ str(Time.get_unix_time_from_system())
 	var root_dir: DirAccess = DirAccess.open("res://")
 	if root_dir.dir_exists(temp_dir_path):
+		# shouldn't happen
 		print("Clearing temp directory before new run...")
 		print("Deleting directory " + temp_dir_path)
 		FileUtils.delete_directory_recursive(temp_dir_path)
@@ -78,7 +52,7 @@ func process():
 	err = FileUtils.copy_directory_recursive(selected_folder_path, temp_animation_dir)
 	if not err == OK:
 		push_error("Error copying files")
-		return
+		return false
 
 	# get a list of all the fbx files we copied so we can verify they imported
 	var copied_files: Array[String] = FileUtils.list_files_recursive(temp_animation_dir).filter(func(f): return f.ends_with(".fbx"))
@@ -88,18 +62,17 @@ func process():
 	var efs: EditorFileSystem = plugin.get_editor_interface().get_resource_filesystem()
 	if not await scan_and_wait_for_signal(efs, copied_files):
 		push_error("Failed to reimport files")
-		plugin.close_popup()
-		return
+		return false
 	print("Finished with initial import")
 
 	# check that the .import files exist in case of failed imports
 	if not FileUtils.verify_import_files_exist(copied_files):
 		push_error("Failed to find .import files")
-		plugin.close_popup()
-		return
+		return false
 	print("All .import files verified")
 
 	# ok, all files are imported - let's update the t-pose animation's .import
+	print("Re-importing T-Pose animations")
 	var temp_tpose_path_polygon: String = temp_animation_dir.path_join(ANIM_TPOSE_PATH_POLYGON)
 	_update_tpose_import_settings(temp_tpose_path_polygon)
 	var temp_tpose_path_sidekick: String = temp_animation_dir.path_join(ANIM_TPOSE_PATH_SIDEKICK)
@@ -109,32 +82,30 @@ func process():
 	await plugin.get_tree().process_frame
 	if not await scan_and_wait_for_signal(efs, [temp_tpose_path_polygon, temp_tpose_path_sidekick], 5):
 		push_error("Failed to reimport tpose_tmp_path")
-		plugin.close_popup()
-		return
+		return false
 
 	# export the rest poses from the re-imported animation
+	print("Exporting the re-imported T-Pose animations")
 	var tpose_res_path_polygon: String = _export_animation_rest_pose_res_files(temp_tpose_path_polygon, temp_dir_path)
 	var anim_library_polygon: AnimationLibrary = _create_tpose_animation_library(tpose_res_path_polygon, temp_dir_path)
 	var tpose_res_path_sidekick: String = _export_animation_rest_pose_res_files(temp_tpose_path_sidekick, temp_dir_path)
 	var anim_library_sidekick: AnimationLibrary = _create_tpose_animation_library(tpose_res_path_sidekick, temp_dir_path)
 	if not anim_library_polygon or not anim_library_sidekick:
 		push_error("Could not create animation library")
-		plugin.close_popup()
-		return
+		return false
 
-	# now we can re-import all of the animations to use the extracted t-pose
-	print("Updating .import and re-importing animations")
+	# now we can re-import all of the animations to use the extracted t-pose (filtering out the t-pose animation)
+	# NOTE: I'm not sure why but trying to fix/re-import the T-poses causes a timeout... maybe the re-import is failing?
+	print("Updating .import files and re-importing animations to fix rest pose")
+#	var anim_files_fixed_polygon: Array[String] = copied_files.filter(func(f): return "Polygon" in f)
 	var anim_files_fixed_polygon: Array[String] = copied_files.filter(func(f): return "Polygon" in f and not f.ends_with("A_TPose_Neut.fbx"))
 	await _reimport_animations_with_tpose(anim_files_fixed_polygon, anim_library_polygon, ANIM_BONE_MAP_POLYGON)
 	var anim_files_fixed_sidekick: Array[String] = copied_files.filter(func(f): return "Sidekick" in f and not f.ends_with("A_MOD_BL_TPose_Neut.fbx"))
-	# NOTE: Leaving Sidekick characters/anims unmapped works, but for some reason mapping them both like we do for Polygon doesn't
-	await _reimport_animations_with_tpose(anim_files_fixed_sidekick, anim_library_sidekick, "")
-#	await _reimport_animations_with_tpose(anim_files_fixed_sidekick, anim_library_sidekick, ANIM_BONE_MAP_SIDEKICK)
+	await _reimport_animations_with_tpose(anim_files_fixed_sidekick, anim_library_sidekick, ANIM_BONE_MAP_SIDEKICK)
 	await plugin.get_tree().process_frame
 	if not await scan_and_wait_for_signal(efs, anim_files_fixed_polygon + anim_files_fixed_sidekick):
-		push_error("Failed to reimport fixed tpose files")
-		plugin.close_popup()
-		return
+		push_error("Failed to reimport fixed animation files")
+		return false
 
 	# we are done, let's write some files (we already deleted the export path)
 	# create the res files
@@ -149,8 +120,9 @@ func process():
 	_create_animation_libraries(export_subdir_sidekick)
 
 	# let's get rid of our temp directory
-	print("Deleting temp directory " + temp_dir_path)
-	FileUtils.delete_directory_recursive(temp_dir_path)
+	if DELETE_TEMP_DIR:
+		print("Deleting temp directory " + temp_dir_path)
+		FileUtils.delete_directory_recursive(temp_dir_path)
 
 	# one last scan so the filesystem explorer is updated
 	if not efs.is_scanning():
@@ -162,20 +134,21 @@ func process():
 		await plugin.get_tree().create_timer(.2).timeout
 	print("FS is finished scanning")
 
-	print("BaseLocomotionExport Finished!")
-	plugin.close_popup()
+	return true
 
 func _export_animation_rest_pose_res_files(src_animation, dst_dir) -> String:
-	print("Exporting animations for file " + src_animation + " to dir " + dst_dir)
+#	print("Exporting animations for file " + src_animation + " to dir " + dst_dir)
 	var scene: PackedScene = ResourceLoader.load(src_animation)
 	var root: Node = scene.instantiate()
-	
+
+	var src_base_name = src_animation.get_file().get_basename()
+
 	var anim_path: String = ""
 	for node in root.get_children():
 		if node is AnimationPlayer:
-			if node.has_animation("RESET"):
-				var anim: Animation = node.get_animation("RESET")
-				anim_path = dst_dir.path_join("RESET.res")
+			if node.has_animation(RESET_ANIM_NAME):
+				var anim: Animation = node.get_animation(RESET_ANIM_NAME)
+				anim_path = dst_dir.path_join(src_base_name + "-" + RESET_ANIM_NAME + ".res")
 				ResourceSaver.save(anim, anim_path)
 
 	root.queue_free()
@@ -193,9 +166,9 @@ func _export_animation_res_files(animation_files, dst_dir, temp_dir_path) -> voi
 				if node.get_animation_list().size() != 1:
 					push_error("More than one animation found for " + src_animation)
 					continue
-					
+
 				for anim_name in node.get_animation_list():
-					var anim: Animation = node.get_animation(anim_name)
+					var anim: Animation = node.get_animation(StringName(str(anim_name)))
 					if anim:
 						# compute subdir relative to res://
 						var subdir = src_animation.replace(temp_dir_path, "").get_base_dir()
@@ -243,12 +216,14 @@ func _create_tpose_animation_library(tpose_rest_res_path: String, temp_dir_path:
 
 	# Create an AnimationLibrary and add the RESET animation
 	var anim_library = AnimationLibrary.new()
-	var err: int = anim_library.add_animation("RESET", reset_anim)
+	var err: int = anim_library.add_animation(RESET_ANIM_NAME, reset_anim)
 	if err != OK:
 		return null	
 
+	var src_base_name = tpose_rest_res_path.get_file().get_basename()
+
 	# Save the library to a temporary location
-	var library_path: String = temp_dir_path.path_join("tpose_library.res")
+	var library_path: String = temp_dir_path.path_join(src_base_name + "-tpose_library.res")
 	err = ResourceSaver.save(anim_library, library_path)
 	if err != OK:
 		return null
@@ -276,7 +251,7 @@ func _update_animation_import_settings(fbx_path: String, anim_library: Animation
 			"PATH:Skeleton3D": {
 				"rest_pose/load_pose": 2,
 				"rest_pose/external_animation_library": anim_library,
-				"rest_pose/selected_animation": "RESET",
+				"rest_pose/selected_animation": RESET_ANIM_NAME,
 			}
 		}
 	}
@@ -294,7 +269,7 @@ func _update_animation_import_settings(fbx_path: String, anim_library: Animation
 				"PATH:Skeleton3D": {
 					"rest_pose/load_pose": 2,
 					"rest_pose/external_animation_library": anim_library,
-					"rest_pose/selected_animation": "RESET",
+					"rest_pose/selected_animation": RESET_ANIM_NAME,
 					"retarget/bone_map": bone_map,
 				}
 			}
@@ -379,7 +354,7 @@ func _create_animation_libraries(root_export_dir: String) -> void:
 
 		var subfolder_path: String = root_export_dir.path_join(folder_name)
 		if dir.current_is_dir():
-			print("Creating AnimationLibrary for top-level folder: " + subfolder_path)
+#			print("Creating AnimationLibrary for top-level folder: " + subfolder_path)
 			_create_anim_library_for_top_level_folder(subfolder_path, root_export_dir)
 		folder_name = dir.get_next()
 	dir.list_dir_end()
