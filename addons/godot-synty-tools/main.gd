@@ -10,19 +10,19 @@ var menu_builders: Dictionary = {}
 var plugin_name: String = "Godot Synty Tools"
 
 # Submenus
-var base_locomotion_menu
-var scifi_city_menu
+var base_locomotion_menu# : BaseMenu
+var scifi_city_menu: BaseMenu
 
 func _ready():
-	# register menu builders - these are wrappers that handle the details
+	# Register menu builders - these are wrappers that handle the details
 	menu_builders["main"] = func(): _show_main_menu()
-	menu_builders["base_locomotion"] = func(): _show_base_locomotion_submenu()
-	menu_builders["main"] = func(): _show_main_menu()
-	menu_builders["scifi_city"] = func(): _show_scifi_city_submenu()
+	menu_builders["base_locomotion"] = func(): _show_submenu_helper(base_locomotion_menu, "Base Locomotion")
+	menu_builders["scifi_city"] = func(): _show_submenu_helper(scifi_city_menu, "Sci-Fi City")
+	# Add additional menus here
 
 func _show_submenu(menu_key: String):
-	current_menu_stack.append(menu_key)
 	if menu_builders.has(menu_key):
+		current_menu_stack.append(menu_key)
 		menu_builders[menu_key].call()
 
 func _enter_tree():
@@ -31,6 +31,7 @@ func _enter_tree():
 	# Initialize submenus
 	base_locomotion_menu = preload("res://addons/godot-synty-tools/ui/base_locomotion_menu.gd").new()
 	base_locomotion_menu.plugin = self
+	
 	scifi_city_menu = preload("res://addons/godot-synty-tools/ui/scifi_city_menu.gd").new()
 	scifi_city_menu.plugin = self
 
@@ -38,10 +39,11 @@ func _exit_tree():
 	remove_tool_menu_item(plugin_name)
 	if popup_window:
 		popup_window.queue_free()
-	if base_locomotion_menu:
-		base_locomotion_menu.cleanup()
-	if base_locomotion_menu:
-		base_locomotion_menu.cleanup()
+	
+	# Cleanup all menus
+	for menu in [base_locomotion_menu, scifi_city_menu]:
+		if menu:
+			menu.cleanup()
 
 func _show_popup():
 	if popup_window:
@@ -91,7 +93,7 @@ func _show_popup():
 	button_grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	button_grid.add_theme_constant_override("separation", 10)
 	
-	# Add Godot Synty Tools buttons
+	# Add main menu buttons
 	_show_main_menu()
 	
 	main_container.add_child(button_grid)
@@ -111,43 +113,22 @@ func _close_popup():
 		popup_window = null
 	current_menu_stack.clear()
 
-	if base_locomotion_menu:
-		base_locomotion_menu.cleanup()
-	if scifi_city_menu:
-		scifi_city_menu.cleanup()
+	# Cleanup all menus
+	for menu in [base_locomotion_menu, scifi_city_menu]:
+		if menu:
+			menu.cleanup()
 
-func _show_base_locomotion_submenu():
-	base_locomotion_menu.show_menu(button_grid, popup_window)
-	_update_title("Base Locomotion")
-
-func _show_scifi_city_submenu():
-	scifi_city_menu.show_menu(button_grid, popup_window)
-	_update_title("Sci-Fi City")
+func _show_submenu_helper(menu: BaseMenu, title: String):
+	menu.show_menu(button_grid, popup_window)
+	_update_title(title)
 
 func _show_main_menu():
-	# Only recreate if button_grid already exists and has a parent
-	if button_grid and button_grid.get_parent():
-		var parent: Node = button_grid.get_parent()
-		button_grid.queue_free()
-		
-		button_grid = VBoxContainer.new()
-		button_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button_grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		button_grid.add_theme_constant_override("separation", 10)
-		parent.add_child(button_grid)
-	
-	_update_title("Godot Synty Tools")
-	
-	# Clear existing children if we're reusing the container
+	# Clear existing children
 	for child in button_grid.get_children():
 		child.queue_free()
 	
-	# Spacer
-	var spacer = Control.new()
-	spacer.custom_minimum_size = Vector2(0, 20)
-	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	button_grid.add_child(spacer)
-	
+	_update_title("Godot Synty Tools")
+
 	# Button row
 	var button_row = HBoxContainer.new()
 	button_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -160,31 +141,31 @@ func _show_main_menu():
 	base_loco_btn.pressed.connect(func(): _show_submenu("base_locomotion"))
 	button_row.add_child(base_loco_btn)
 	
-#	# Sci-Fi City button
-#	var scifi_city_btn = Button.new()
-#	scifi_city_btn.text = "Sci-Fi City"
-#	scifi_city_btn.custom_minimum_size = Vector2(200, 60)
-#	scifi_city_btn.pressed.connect(func(): _show_submenu("scifi_city"))
+	# Sci-Fi City button
+	var scifi_city_btn = Button.new()
+	scifi_city_btn.text = "Sci-Fi City"
+	scifi_city_btn.custom_minimum_size = Vector2(200, 60)
+	scifi_city_btn.pressed.connect(func(): _show_submenu("scifi_city"))
 #	button_row.add_child(scifi_city_btn)
 
 	button_grid.add_child(button_row)
 
-	# Another spacer
-	var spacer2 = Control.new()
-	spacer2.custom_minimum_size = Vector2(0, 20)
-	spacer2.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	button_grid.add_child(spacer2)
+	# Bottom spacer
+	var spacer = Control.new()
+	spacer.custom_minimum_size = Vector2(0, 20)
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	button_grid.add_child(spacer)
 	
 	# Exit button at bottom
 	var exit_row = HBoxContainer.new()
 	exit_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	
+
 	var exit_btn = Button.new()
 	exit_btn.text = "Exit"
 	exit_btn.custom_minimum_size = Vector2(150, 60)
 	exit_btn.pressed.connect(_on_exit)
 	exit_row.add_child(exit_btn)
-	
+
 	button_grid.add_child(exit_row)
 
 func _go_back():
