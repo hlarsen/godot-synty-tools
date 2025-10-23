@@ -30,6 +30,10 @@ func get_validation_error() -> String:
 		return "No folder selected"
 	return "Invalid folder structure"
 
+func _validate() -> void:
+	var is_valid: bool = validate_inputs()
+	emit_signal("validation_changed", is_valid)
+
 func process() -> bool:
 	update_status("Processing started...")
 	
@@ -46,7 +50,3 @@ func process() -> bool:
 	update_status("Processing finished!")
 	
 	return true
-
-func _validate() -> void:
-	var is_valid: bool = validate_inputs()
-	emit_signal("validation_changed", is_valid)

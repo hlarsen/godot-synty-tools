@@ -119,13 +119,13 @@ func _validate_and_enable_run_button() -> void:
 		print("Not Enabling Run Button: Cannot open dir: ", selected_folder_path)
 		return
 
-	if not selected_folder_path.get_file() == "Polygon":
-		print("Not Enabling Run Button: Invalid directory (Select Base Locomotion Animations/Polygon folder): ", selected_folder_path)
+	if not selected_folder_path.get_file() == "Animations":
+		print("Not Enabling Run Button: Invalid directory (Select Base Locomotion Animations folder): ", selected_folder_path)
 		return
 
 #	# verify the t-pose is where we expect it to be
-#	if not dir.file_exists(ANIM_TPOSE_PATH):
-#		print("Not Enabling Run Button: Could not find T-Pose fbx")
+#	if not dir.file_exists(ANIM_TPOSE_PATH_POLYGON) or not dir.file_exists(ANIM_TPOSE_PATH_SIDEKICK):
+#		print("Not Enabling Run Button: Could not find T-Pose fbx files")
 #		return
 
 	run_button.disabled = false
