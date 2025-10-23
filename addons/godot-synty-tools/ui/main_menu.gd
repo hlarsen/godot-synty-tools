@@ -1,0 +1,56 @@
+@tool
+extends BaseMenu
+
+func build_content() -> void:
+	# Button row
+	var button_row = HBoxContainer.new()
+	button_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	button_row.add_theme_constant_override("separation", 10)
+	
+	# Base Locomotion button
+	var base_loco_btn = Button.new()
+	base_loco_btn.text = "Base Locomotion"
+	base_loco_btn.custom_minimum_size = Vector2(200, 60)
+	base_loco_btn.pressed.connect(func(): plugin._show_submenu("base_locomotion"))
+	button_row.add_child(base_loco_btn)
+	
+	# Sci-Fi City button
+	var scifi_city_btn = Button.new()
+	scifi_city_btn.text = "Sci-Fi City"
+	scifi_city_btn.custom_minimum_size = Vector2(200, 60)
+	scifi_city_btn.pressed.connect(func(): plugin._show_submenu("scifi_city"))
+	button_row.add_child(scifi_city_btn)
+
+	container.add_child(button_row)
+
+func show_menu(button_grid: Control, popup_window: Window) -> void:
+	container = button_grid
+	window = popup_window
+	
+	# Clear existing children
+	for child in container.get_children():
+		child.queue_free()
+	
+	# Update title
+	plugin.update_title("Godot Synty Tools")
+	
+	# Build content
+	build_content()
+	
+	# Bottom spacer
+	var spacer = Control.new()
+	spacer.custom_minimum_size = Vector2(0, 20)
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	container.add_child(spacer)
+	
+	# Exit button at bottom (instead of Back)
+	var exit_row = HBoxContainer.new()
+	exit_row.alignment = BoxContainer.ALIGNMENT_CENTER
+
+	var exit_btn = Button.new()
+	exit_btn.text = "Exit"
+	exit_btn.custom_minimum_size = Vector2(150, 60)
+	exit_btn.pressed.connect(plugin._on_exit)
+	exit_row.add_child(exit_btn)
+
+	container.add_child(exit_row)
