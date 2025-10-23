@@ -428,16 +428,23 @@ func _add_animations_recursive(current_path: String, lib: AnimationLibrary, rela
 					anim_name += file_name.get_basename()
 
 					# clean up the names a bit
-					var patterns: Dictionary[String, String] = {
+					var polygon_replacements: Dictionary[String, String] = {
 						" - A_": " - ",
 						"_Femn": "",
 						"_Masc": "",
 						"_Neut": "",
 						"_": ""
 					}
+					
+					var sidekick_replacements: Dictionary[String, String] = {
+						"MODBL": "",
+					}
 
-					for old in patterns.keys():
-						anim_name = anim_name.replace(old, patterns[old])
+					for old in polygon_replacements.keys():
+						anim_name = anim_name.replace(old, polygon_replacements[old])
+
+					for old in sidekick_replacements.keys():
+						anim_name = anim_name.replace(old, sidekick_replacements[old])
 
 					lib.add_animation(anim_name, anim)
 		file_name = dir.get_next()
