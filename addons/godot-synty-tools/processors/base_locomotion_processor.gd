@@ -10,6 +10,7 @@ var selected_folder_path: String = ""
 # Base Locomotion Bone Map
 const ANIM_BONE_MAP_POLYGON: String = "res://addons/godot-synty-tools/bone_maps/base_locomotion_v3_polygon.tres"
 # NOTE: we're not currently applying the Sidekick bonemap because it works without them and is weird with them
+# also getting a this but the animations work: Condition "p_animation_library.is_null()" is true. Returning: StringName()
 const ANIM_BONE_MAP_SIDEKICK: String = "res://addons/godot-synty-tools/bone_maps/base_locomotion_v3_sidekick.tres"
 # The T-Pose animation we need to use as a RESET for the other animations
 const ANIM_TPOSE_PATH_POLYGON: String = "Polygon/Neutral/Additive/TPose/A_TPose_Neut.fbx"
