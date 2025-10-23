@@ -10,13 +10,15 @@ var menu_builders: Dictionary = {}
 var plugin_name: String = "Godot Synty Tools"
 
 # Submenus
-var base_locomotion_export_menu
+var base_locomotion_menu
+var scifi_city_menu
 
 func _ready():
 	# register menu builders - these are wrappers that handle the details
 	menu_builders["main"] = func(): _show_main_menu()
 	menu_builders["base_locomotion"] = func(): _show_base_locomotion_submenu()
-	# add additional menus here
+	menu_builders["main"] = func(): _show_main_menu()
+	menu_builders["scifi_city"] = func(): _show_scifi_city_submenu()
 
 func _show_submenu(menu_key: String):
 	current_menu_stack.append(menu_key)
@@ -27,22 +29,23 @@ func _enter_tree():
 	add_tool_menu_item(plugin_name, _show_popup)
 	
 	# Initialize submenus
-	base_locomotion_export_menu = preload("res://addons/godot-synty-tools/base_locomotion_export_menu.gd").new()
-	base_locomotion_export_menu.plugin = self
+	base_locomotion_menu = preload("res://addons/godot-synty-tools/ui/base_locomotion_menu.gd").new()
+	base_locomotion_menu.plugin = self
+	scifi_city_menu = preload("res://addons/godot-synty-tools/ui/scifi_city_menu.gd").new()
+	scifi_city_menu.plugin = self
 
 func _exit_tree():
 	remove_tool_menu_item(plugin_name)
 	if popup_window:
 		popup_window.queue_free()
-	if base_locomotion_export_menu:
-		base_locomotion_export_menu.cleanup()
+	if base_locomotion_menu:
+		base_locomotion_menu.cleanup()
+	if base_locomotion_menu:
+		base_locomotion_menu.cleanup()
 
 func _show_popup():
 	if popup_window:
 		popup_window.queue_free()
-
-#	current_menu_stack.clear()
-#	current_menu_stack.append("main")
 
 	# Create main window
 	popup_window = Window.new()
@@ -72,7 +75,7 @@ func _show_popup():
 	
 	# Title
 	var title = Label.new()
-	title.text = "Main Menu"
+	title.text = "Godot Synty Tools"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 24)
 	main_container.add_child(title)
@@ -88,7 +91,7 @@ func _show_popup():
 	button_grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	button_grid.add_theme_constant_override("separation", 10)
 	
-	# Add main menu buttons
+	# Add Godot Synty Tools buttons
 	_show_main_menu()
 	
 	main_container.add_child(button_grid)
@@ -108,12 +111,18 @@ func _close_popup():
 		popup_window = null
 	current_menu_stack.clear()
 
-	if base_locomotion_export_menu:
-		base_locomotion_export_menu.cleanup()
+	if base_locomotion_menu:
+		base_locomotion_menu.cleanup()
+	if scifi_city_menu:
+		scifi_city_menu.cleanup()
 
 func _show_base_locomotion_submenu():
-	base_locomotion_export_menu.show_menu(button_grid, popup_window)
-	_update_title("Base Locomotion Export")
+	base_locomotion_menu.show_menu(button_grid, popup_window)
+	_update_title("Base Locomotion")
+
+func _show_scifi_city_submenu():
+	scifi_city_menu.show_menu(button_grid, popup_window)
+	_update_title("Sci-Fi City")
 
 func _show_main_menu():
 	# Only recreate if button_grid already exists and has a parent
@@ -127,7 +136,7 @@ func _show_main_menu():
 		button_grid.add_theme_constant_override("separation", 10)
 		parent.add_child(button_grid)
 	
-	_update_title("Main Menu")
+	_update_title("Godot Synty Tools")
 	
 	# Clear existing children if we're reusing the container
 	for child in button_grid.get_children():
@@ -144,15 +153,22 @@ func _show_main_menu():
 	button_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	button_row.add_theme_constant_override("separation", 10)
 	
-	# Base Locomotion Export button
+	# Base Locomotion button
 	var base_loco_btn = Button.new()
-	base_loco_btn.text = "Base Locomotion Export"
+	base_loco_btn.text = "Base Locomotion"
 	base_loco_btn.custom_minimum_size = Vector2(200, 60)
 	base_loco_btn.pressed.connect(func(): _show_submenu("base_locomotion"))
 	button_row.add_child(base_loco_btn)
 	
+#	# Sci-Fi City button
+#	var scifi_city_btn = Button.new()
+#	scifi_city_btn.text = "Sci-Fi City"
+#	scifi_city_btn.custom_minimum_size = Vector2(200, 60)
+#	scifi_city_btn.pressed.connect(func(): _show_submenu("scifi_city"))
+#	button_row.add_child(scifi_city_btn)
+
 	button_grid.add_child(button_row)
-	
+
 	# Another spacer
 	var spacer2 = Control.new()
 	spacer2.custom_minimum_size = Vector2(0, 20)

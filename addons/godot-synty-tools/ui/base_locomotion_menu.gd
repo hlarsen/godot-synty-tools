@@ -23,7 +23,6 @@ const EXPORT_PATH: String = "res://godot-synty-tools-output/"
 const IMPORT_WAIT_TIMEOUT: int = 30
 
 func show_menu(button_grid: Control, popup_window: Window):
-	# Replace grid with VBox for this menu
 	var parent = button_grid.get_parent()
 	button_grid.queue_free()
 	
