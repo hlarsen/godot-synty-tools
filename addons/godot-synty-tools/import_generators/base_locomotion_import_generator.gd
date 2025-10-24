@@ -1,12 +1,12 @@
 @tool
-extends BaseProcessor
-class_name BaseLocomotionProcessor
-
-#signal selected_folder_changed(path: String)
+extends BaseImportGenerator
+class_name BaseLocomotionImportGenerator
 
 var export_subdir: String = EXPORT_BASE_PATH.path_join("base_locomotion")
 var selected_folder_path: String = ""
+var post_import_script: String = POST_IMPORT_SCRIPT_BASE_PATH.path_join("base_locomotion.gd") 
 
+# OTLD STUFF
 # Base Locomotion Bone Maps
 const ANIM_BONE_MAP_POLYGON: String = "res://addons/godot-synty-tools/bone_maps/base_locomotion_v3_polygon.tres"
 const ANIM_BONE_MAP_SIDEKICK: String = "res://addons/godot-synty-tools/bone_maps/base_locomotion_v3_sidekick.tres"
@@ -14,16 +14,81 @@ const ANIM_BONE_MAP_SIDEKICK: String = "res://addons/godot-synty-tools/bone_maps
 const ANIM_TPOSE_PATH_POLYGON: String = "Polygon/Neutral/Additive/TPose/A_TPose_Neut.fbx"
 const ANIM_TPOSE_PATH_SIDEKICK: String = "Sidekick/Neutral/Additive/TPose/A_MOD_BL_TPose_Neut.fbx"
 const DELETE_TEMP_DIR: bool = true
-# To properly track re-imports we have to listen for signals that reports each file was re-imported
-# Sometimes there are issues so we give it a max timeout to wait so we're not stuck
-const IMPORT_WAIT_TIMEOUT: int = 60
 const RESET_ANIM_NAME: String = "RESET"
 
 func set_folder(path: String) -> void:
 	selected_folder_path = path
-#	emit_signal("selected_folder_changed", path)
 
-func process() -> bool:
+func process() -> Error:
+#	print("Deleting output directory before new run: " + export_subdir)
+	var err: Error = FileUtils.delete_directory_recursive(export_subdir)
+	if not err == OK:
+		push_error("Error deleting directory: " + export_subdir)
+		return err
+
+	print("Creating temp dir")
+	var temp_dir: DirAccess = DirAccess.create_temp("scifi-import", true)
+	if not temp_dir:
+		push_error("Can't create temp directory: " + error_string(temp_dir.get_open_error()))
+		return temp_dir.get_open_error()
+
+	var temp_dir_path: String = temp_dir.get_current_dir()
+	print("Using temp dir: " + temp_dir_path)
+	print("Copying files from " + selected_folder_path + " to " + temp_dir_path)
+	err = FileUtils.copy_directory_recursive(selected_folder_path.path_join("Polygon"), temp_dir_path.path_join("Sidekick"))
+	if not err == OK:
+		push_error("Error copying: " + error_string(err))
+		return err
+
+	err = FileUtils.copy_directory_recursive(selected_folder_path.path_join("Polygon"), temp_dir_path.path_join("Sidekick"))
+	if not err == OK:
+		push_error("Error copying: " + error_string(err))
+		return err
+
+	# TODO: process animations and all that here
+
+	var imports_to_create: Array[String] = FileUtils.list_files_recursive(temp_dir_path).filter(func(f): return f.ends_with(".fbx"))
+	print("Adding .import files for " + str(imports_to_create.size()) + " FBX files in " + temp_dir_path)
+	for file in imports_to_create:
+		if not file.ends_with(".fbx"):
+			continue
+
+		print("Generating import file for: " + file)
+		var tmp_file_path: String = file.replace(temp_dir_path, export_subdir)
+		err = generate_fbx_import_file(file, tmp_file_path)
+		if not err == OK:
+			push_error("Error generating import file for " + file + ": " + error_string(err))
+			return err
+
+	print("Copy files from " + temp_dir_path + " to " + export_subdir)
+	err = FileUtils.copy_directory_recursive(temp_dir_path, export_subdir)
+	if not err == OK:
+		push_error("Error copying: " + error_string(err))
+		return err
+
+	# kick off a scan in case one is not started by the file copeis
+	var efs: EditorFileSystem = plugin.get_editor_interface().get_resource_filesystem()
+	if not efs.is_scanning():
+		efs.scan()
+
+	return OK
+
+# TODO: need to update the import for animations
+func generate_fbx_import_file(src_file, tmp_file_path) -> Error:
+	var config = ConfigFile.new()
+
+	# NOTE: minimum requirements for importing an FBX appear to be: deps > source_file and params/fbx_importer
+	config.set_value("deps", "source_file", tmp_file_path)
+	config.set_value("params", "import_script/path", post_import_script)
+	config.set_value("params", "fbx/importer", 0)
+
+	return config.save(src_file + ".import")
+
+
+################## old code below
+
+func process1():
+	return FAILED
 	print("Clearing output directory before new run...")
 	print("Deleting directory " + export_subdir)
 	var err: int = FileUtils.delete_directory_recursive(export_subdir)
@@ -59,9 +124,9 @@ func process() -> bool:
 
 	# scan and wait for the signals to check that all files were imported (350ish animations for Base Locomotion)
 	var efs: EditorFileSystem = plugin.get_editor_interface().get_resource_filesystem()
-	if not await scan_and_wait_for_signal(efs, copied_files):
-		push_error("Failed to reimport files")
-		return false
+#	if not await scan_and_wait_for_signal(efs, copied_files):
+#		push_error("Failed to reimport files")
+#		return false
 	print("Finished with initial import")
 
 	# check that the .import files exist in case of failed imports
@@ -78,10 +143,10 @@ func process() -> bool:
 	_update_tpose_import_settings(temp_tpose_path_sidekick)
 
 	# re-import the file
-	await plugin.get_tree().process_frame
-	if not await scan_and_wait_for_signal(efs, [temp_tpose_path_polygon, temp_tpose_path_sidekick], 5):
-		push_error("Failed to reimport tpose_tmp_path")
-		return false
+#	await plugin.get_tree().process_frame
+#	if not await scan_and_wait_for_signal(efs, [temp_tpose_path_polygon, temp_tpose_path_sidekick], 5):
+#		push_error("Failed to reimport tpose_tmp_path")
+#		return false
 
 	# export the rest poses from the re-imported animation
 	print("Exporting the re-imported T-Pose animations")
@@ -102,9 +167,9 @@ func process() -> bool:
 	var anim_files_fixed_sidekick: Array[String] = copied_files.filter(func(f): return "Sidekick" in f and not f.ends_with("A_MOD_BL_TPose_Neut.fbx"))
 	await _reimport_animations_with_tpose(anim_files_fixed_sidekick, anim_library_sidekick, ANIM_BONE_MAP_SIDEKICK)
 	await plugin.get_tree().process_frame
-	if not await scan_and_wait_for_signal(efs, anim_files_fixed_polygon + anim_files_fixed_sidekick):
-		push_error("Failed to reimport fixed animation files")
-		return false
+#	if not await scan_and_wait_for_signal(efs, anim_files_fixed_polygon + anim_files_fixed_sidekick):
+#		push_error("Failed to reimport fixed animation files")
+#		return false
 
 	# we are done, let's write some files (we already deleted the export path)
 	# create the res files
@@ -171,11 +236,11 @@ func _export_animation_res_files(animation_files, dst_dir, temp_dir_path) -> voi
 						var subdir = src_animation.replace(temp_dir_path, "").get_base_dir()
 						var full_dst_dir = dst_dir.path_join(subdir).replace("/Animations/", "/")
 						dir.make_dir_recursive(full_dst_dir)
-						
+
 						var anim_path = full_dst_dir.path_join("%s.res" % anim_name)
 #						print("Saving animation " + src_animation + " to " + anim_path)
 						ResourceSaver.save(anim, anim_path)
-	
+
 		root.queue_free()
 
 func _update_tpose_import_settings(fbx_path: String) -> int:
@@ -292,7 +357,7 @@ func _create_animation_libraries(root_export_dir: String) -> void:
 	if not dir:
 		push_error("Can't open root export directory: " + root_export_dir)
 		return
-	
+
 	dir.include_navigational = false
 	dir.include_hidden = false
 	dir.list_dir_begin()
@@ -361,7 +426,7 @@ func _add_animations_recursive(current_path: String, lib: AnimationLibrary, rela
 						"_Neut": "",
 						"_": ""
 					}
-					
+
 					var sidekick_replacements: Dictionary[String, String] = {
 						"MODBL": "",
 					}

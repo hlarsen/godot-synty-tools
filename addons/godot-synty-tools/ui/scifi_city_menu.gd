@@ -8,7 +8,7 @@ var selected_folder_label: Label
 var selected_folder_path: String = ""
 var status_label: Label
 
-var import_generator = preload("res://addons/godot-synty-tools/processors/scifi_city_import_generator.gd")
+var import_generator = preload("res://addons/godot-synty-tools/import_generators/scifi_city_import_generator.gd")
 
 const SYNTY_POST_IMPORT_SCRIPT = "res://addons/godot-synty-tools/post_import_scripts/scifi_city.gd"
 
@@ -135,11 +135,6 @@ func _on_run_button_press() -> void:
 	status_label.visible = true
 	selected_folder_label.visible = false
 
-	# Save old default
-#	var existing_scene_post_import_script = ProjectSettings.get_setting("import_defaults/scene/script", "")
-#	print("Temporarily modifying the project's Default Import settings for Scene objects to: " + SYNTY_POST_IMPORT_SCRIPT)
-#	ProjectSettings.set_setting("import_defaults/scene/script", SYNTY_POST_IMPORT_SCRIPT)
-
 	var import_generator = import_generator.new()
 	import_generator.plugin = plugin
 	import_generator.set_folder(selected_folder_path)
@@ -148,8 +143,5 @@ func _on_run_button_press() -> void:
 		print("Please review the logs, there was an error: " + error_string(err))
 
 	print("Processing finished!")
-
-#	ProjectSettings.set_setting("import_defaults/scene/script", existing_scene_post_import_script)
-#	print("Project Default Import settings restored to the original value: " + existing_scene_post_import_script)
 
 	plugin.close_popup()

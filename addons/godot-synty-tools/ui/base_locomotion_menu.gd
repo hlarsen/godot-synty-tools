@@ -8,7 +8,9 @@ var selected_folder_label: Label
 var selected_folder_path: String = ""
 var status_label: Label
 
-var processor = preload("res://addons/godot-synty-tools/processors/base_locomotion_processor.gd")
+var import_generator = preload("res://addons/godot-synty-tools/import_generators/base_locomotion_import_generator.gd")
+
+const SYNTY_POST_IMPORT_SCRIPT: String = "res://addons/godot-synty-tools/post_import_scripts/base_locomotion.gd"
 
 func cleanup() -> void:
 	if file_dialog and is_instance_valid(file_dialog):
@@ -133,13 +135,11 @@ func _on_run_button_press() -> void:
 	status_label.visible = true
 	selected_folder_label.visible = false
 
-	var processor = processor.new()
-	processor.plugin = plugin
-	processor.set_folder(selected_folder_path)
-	var results: bool = await processor.process()
-	if results:
-		print("Processing finished!")
-	else:
-		print("There was an error, please review the logs.")
+	var import_generator = import_generator.new()
+	import_generator.plugin = plugin
+	import_generator.set_folder(selected_folder_path)
+	var err: Error = await import_generator.process()
+	if not err == OK:
+		print("Please review the logs, there was an error: " + error_string(err))
 	
 	plugin.close_popup()
