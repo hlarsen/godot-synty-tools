@@ -131,13 +131,13 @@ func _on_run_button_press() -> void:
 	print("Running Sci-Fi City processing with folder: ", selected_folder_path)
 	run_button.disabled = true
 	select_folder_button.disabled = true
-	status_label.text = "Processing started, do not interact with the editor!\nSee the Output tab for logs."
+	status_label.text = "Processing started, see the Output tab for logs."
 	status_label.visible = true
 	selected_folder_label.visible = false
 
 	var import_generator = import_generator.new()
 	import_generator.plugin = plugin
-	import_generator.set_folder(selected_folder_path)
+	import_generator.selected_folder_path = selected_folder_path
 	var err: Error = await import_generator.process()
 	if not err == OK:
 		print("Please review the logs, there was an error: " + error_string(err))

@@ -16,7 +16,7 @@ func build_content() -> void:
 	
 	# Sci-Fi City button
 	var scifi_city_btn = Button.new()
-	scifi_city_btn.text = "Sci-Fi City"
+	scifi_city_btn.text = "Sci-Fi City\n(Work in Progress)"
 	scifi_city_btn.custom_minimum_size = Vector2(200, 60)
 	scifi_city_btn.pressed.connect(func(): plugin._show_submenu("scifi_city"))
 	button_row.add_child(scifi_city_btn)
