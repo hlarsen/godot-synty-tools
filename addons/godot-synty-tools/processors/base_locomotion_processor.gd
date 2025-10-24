@@ -4,6 +4,7 @@ class_name BaseLocomotionProcessor
 
 #signal selected_folder_changed(path: String)
 
+var export_subdir: String = EXPORT_BASE_PATH.path_join("base_locomotion")
 var selected_folder_path: String = ""
 
 # Base Locomotion Bone Maps
@@ -13,12 +14,10 @@ const ANIM_BONE_MAP_SIDEKICK: String = "res://addons/godot-synty-tools/bone_maps
 const ANIM_TPOSE_PATH_POLYGON: String = "Polygon/Neutral/Additive/TPose/A_TPose_Neut.fbx"
 const ANIM_TPOSE_PATH_SIDEKICK: String = "Sidekick/Neutral/Additive/TPose/A_MOD_BL_TPose_Neut.fbx"
 const DELETE_TEMP_DIR: bool = true
-const EXPORT_PATH: String = "res://godot-synty-tools-output/"
 # To properly track re-imports we have to listen for signals that reports each file was re-imported
 # Sometimes there are issues so we give it a max timeout to wait so we're not stuck
 const IMPORT_WAIT_TIMEOUT: int = 60
 const RESET_ANIM_NAME: String = "RESET"
-const TEMP_IMPORT_PATH_BASE: String = "res://godot-synty-tools-temp-import"
 
 func set_folder(path: String) -> void:
 	selected_folder_path = path
@@ -26,10 +25,10 @@ func set_folder(path: String) -> void:
 
 func process() -> bool:
 	print("Clearing output directory before new run...")
-	print("Deleting directory " + EXPORT_PATH)
-	var err: int = FileUtils.delete_directory_recursive(EXPORT_PATH)
+	print("Deleting directory " + export_subdir)
+	var err: int = FileUtils.delete_directory_recursive(export_subdir)
 	if not err == OK:
-		push_error("Error deleting directory: " + EXPORT_PATH)
+		push_error("Error deleting directory: " + export_subdir)
 		return false
 
 	# use a temp folder inside the project
@@ -110,8 +109,6 @@ func process() -> bool:
 	# we are done, let's write some files (we already deleted the export path)
 	# create the res files
 	print("Exporting fixed animations...")
-	var export_subdir: String = EXPORT_PATH.path_join("base_locomotion_animations")
-	print("Export Subdir: " + export_subdir)
 	_export_animation_res_files(anim_files_fixed_polygon, export_subdir, temp_dir_path)
 	_export_animation_res_files(anim_files_fixed_sidekick, export_subdir, temp_dir_path)
 	var export_subdir_polygon: String = export_subdir.path_join("Polygon")
@@ -284,54 +281,7 @@ func _update_animation_import_settings(fbx_path: String, anim_library: Animation
 
 	return OK
 
-# NOTE: Using this for reimport as well since can't get reimport_files() to work properly without the editor
-# complaining if I alt tab about an import already running... doesn't seem like you can check if one is running
-func scan_and_wait_for_signal(efs: EditorFileSystem, file_paths: Array[String], timeout_seconds: float = IMPORT_WAIT_TIMEOUT) -> bool:
-	print("Waiting up to " + str(timeout_seconds) + " seconds for reimport of %d files" % file_paths.size())
 
-	var files_to_wait: Array = file_paths.duplicate()
-	var start_time: int = Time.get_ticks_msec()
-
-	# connect signal handler BEFORE triggering reimport
-	var on_reimport = func(resources: PackedStringArray):
-#		print_debug("Resources reimported signal received with %d files" % resources.size())
-
-		# check for reimported files
-		for i in range(files_to_wait.size() - 1, -1, -1):  # Iterate backwards so we can remove
-			if files_to_wait[i] in resources:
-#				print_debug("Reimported: " + files_to_wait[i])
-				files_to_wait.remove_at(i)
-
-	efs.resources_reimported.connect(on_reimport)
-
-	if not efs.is_scanning():
-		efs.scan()
-
-	await plugin.get_tree().process_frame
-	while efs.is_scanning():
-		print("FS is scanning, waiting .2 seconds")
-		await plugin.get_tree().create_timer(.2).timeout
-	print("FS is finished scanning, waiting for import to finish...")
-
-	# wait until all files are reimported or timeout
-	while files_to_wait.size() > 0:
-		var elapsed: float = (Time.get_ticks_msec() - start_time) / 1000.0
-
-		if elapsed > timeout_seconds:
-			push_error("Reimport timeout after %.1f seconds. Still waiting for:" % elapsed)
-			for file in files_to_wait:
-				push_error("  - " + file)
-			efs.resources_reimported.disconnect(on_reimport)
-			return false
-
-#		print("Still waiting for %d files (%.1fs elapsed)" % [files_to_wait.size(), elapsed])
-		await plugin.get_tree().create_timer(0.2).timeout
-
-	# disconnect from the signal
-	efs.resources_reimported.disconnect(on_reimport)
-
-	print("All files successfully reimported")
-	return true
 
 func _reimport_animations_with_tpose(copied_files: Array[String], anim_library: AnimationLibrary, bone_map: String) -> void:
 	for fbx_file in copied_files:

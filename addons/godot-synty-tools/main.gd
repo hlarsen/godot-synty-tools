@@ -4,7 +4,7 @@ extends EditorPlugin
 var current_menu_stack: Array = []
 var menu_builders: Dictionary = {}
 var plugin_name: String = "Godot Synty Tools"
-var popup_manager: RefCounted  # Will be PopupManager instance
+var popup_manager: PopupManager
 
 # Submenus
 var main_menu: BaseMenu
@@ -25,21 +25,16 @@ func _show_submenu(menu_key: String):
 func _enter_tree():
 	add_tool_menu_item(plugin_name, _show_popup)
 	
-	# Initialize popup manager
-	var PopupManager: PopupManager = preload("res://addons/godot-synty-tools/ui/popup_manager.gd")
-	popup_manager = PopupManager.new()
-	
-	# Initialize main menu
+	popup_manager = preload("res://addons/godot-synty-tools/ui/popup_manager.gd").new()
 	main_menu = preload("res://addons/godot-synty-tools/ui/main_menu.gd").new()
 	main_menu.plugin = self
 	
-	# Initialize submenus
 	base_locomotion_menu = preload("res://addons/godot-synty-tools/ui/base_locomotion_menu.gd").new()
 	base_locomotion_menu.plugin = self
 	
 	scifi_city_menu = preload("res://addons/godot-synty-tools/ui/scifi_city_menu.gd").new()
 	scifi_city_menu.plugin = self
-
+	
 func _exit_tree():
 	remove_tool_menu_item(plugin_name)
 	if popup_manager:
