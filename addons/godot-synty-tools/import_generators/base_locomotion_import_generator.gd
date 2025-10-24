@@ -1,5 +1,7 @@
 @tool
 extends BaseImportGenerator
+
+# TODO: do we need to process Polygon and Sidekick if we're eventually just using Godot to map via Skeletons?
 class_name BaseLocomotionImportGenerator
 
 var export_subdir: String = EXPORT_BASE_PATH.path_join(MODULE)

@@ -3,6 +3,8 @@ extends EditorScenePostImport
 
 const DEBUG_LOGGING: bool = false
 
+# This Post Install script is probably not too useful on its own, it just creates animation .resources files
+# At this point we've already fixed the animations, so if you run this without it the animations won't work correctly
 func _post_import(scene: Node) -> Object:
 	var src_file: String = get_source_file()
 

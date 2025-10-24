@@ -3,6 +3,7 @@ extends EditorScenePostImport
 
 const DEBUG_LOGGING: bool = false
 
+# This install script may be useful on its own, so far we're not doing any pre-processing like with Base Locomotion
 func _post_import(scene: Node) -> Object:
 	var src_file: String = get_source_file()
 
