@@ -16,7 +16,7 @@ func create_popup(plugin_ref: EditorPlugin, plugin_name: String) -> void:
 	# Create main window
 	popup_window = Window.new()
 	popup_window.title = plugin_name
-	popup_window.size = Vector2i(600, 400)
+	popup_window.size = Vector2i(475, 500)
 	popup_window.unresizable = false
 	popup_window.borderless = false
 	popup_window.transient = true

@@ -4,6 +4,18 @@ These are some notes on how I understand things, I could definitely be wrong so 
 
 Please excuse the code, some of it may be... [inelegant](https://frinkiac.com/meme/S03E11/754786.jpg).
 
+## Approaches
+
+The below notes are for my initial import > update .import > reimport approach. It wasn't great, and after much
+research and testing I found it much easier to process the files with a combination of:
+
+- Pre-processing of files via script in this addon (as needed)
+- Generating partial `.import` files _before_ copying to the file system
+- Post Import scripts that run after Godot imports the files
+
+This approach is less error prone and a lot faster. See the `import_generators` and `post_import_scripts` directories
+for more info.
+
 ## File Scanning vs Importing
 
 Scanning refers to the engine _scanning the filesystem_ - it is async, but it does _not_ take a long time.

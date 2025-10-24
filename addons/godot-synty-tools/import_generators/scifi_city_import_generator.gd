@@ -41,7 +41,7 @@ func process() -> Error:
 		if not file.ends_with(".fbx"):
 			continue
 
-		print("Generating import file for: " + file)
+#		print("Generating import file for: " + file)
 		var tmp_file_path: String = file.replace(temp_dir_path, export_subdir)
 		err = generate_fbx_import_file(file, tmp_file_path)
 		if not err == OK:

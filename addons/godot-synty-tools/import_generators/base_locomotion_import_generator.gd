@@ -132,18 +132,17 @@ func process() -> Error:
 		export_subdir.path_join("Polygon").path_join("AC_Polygon_Feminine.controller"),
 		export_subdir.path_join("Polygon").path_join("AC_Polygon_Masculine.controller"),
 		export_subdir.path_join("Sidekick").path_join("AC_Sidekick_Feminine.controller"),
-		export_subdir.path_join("Sidekick").path_join("AC_Polygon_Masculine.controller"),
-		TPOSE_WORKING_DIR,
+		export_subdir.path_join("Sidekick").path_join("AC_Sidekick_Masculine.controller"),
 	]
 
-	var files_to_delete = (cleanup_polygon + cleanup_sidekick + cleanup_misc)
+	var files_to_delete: Array[String] = (cleanup_polygon + cleanup_sidekick + cleanup_misc)
 	for file in files_to_delete:
-		err = FileUtils.delete_directory_recursive(file)
+		err = DirAccess.remove_absolute(file)
 		if not err == OK:
 			push_error("Error deleting: " + error_string(err))
 			return err
 
-	err = FileUtils.delete_directory_recursive(TPOSE_WORKING_DIR)
+	err = FileUtils.delete_directory_recursive(export_subdir_tpose_fixed)
 	if not err == OK:
 		push_error("Error deleting: " + error_string(err))
 		return err

@@ -15,7 +15,7 @@ I have some Blender scripts in another repo that will clean up the FBX files, fi
 
 ### Features
 
-#### Base Locomotion Export
+#### Base Locomotion
 
 The Synty Base Locomotion source files do not have a proper T-Pose Rest Pose, so adding them to characters that do have
 one is an issue. Pass in your `Animations/Polygon` folder and the addon will output fixed Animation files as well as
@@ -24,8 +24,11 @@ AnimationLibraries for the main folders.
 You can add use these new Resource files in the AnimationPlayer of a character who is properly mapped to Godot's
 `SkeletonProfileHumanoid`.
 
-Please note that there appears to be a race condition or some other issue I can't pin down... if you get an error
-when it's trying to re-import files, just try to re-run it again and see if it works, maybe restart the project.
+#### Sci-Fi City
+
+This is a work in progress, currently:
+
+- Exports cleaned up SM_ files (TODO: should probably change default collision type)
 
 ### Feedback and Future Work
 

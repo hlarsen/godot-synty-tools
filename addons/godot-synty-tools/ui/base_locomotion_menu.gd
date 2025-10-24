@@ -2,6 +2,8 @@
 extends BaseMenu
 
 var file_dialog: EditorFileDialog
+var back_button: Button
+var exit_button: Button
 var instruction_default: String = "Select the " + MODULE + " Animations folder"
 var run_button: Button
 var select_folder_button: Button
@@ -87,15 +89,37 @@ func build_content() -> void:
 	button_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	button_row.add_theme_constant_override("separation", 10)
 
-	# Run botton
 	run_button = Button.new()
 	run_button.text = "Run"
 	run_button.custom_minimum_size = Vector2(150, 60)
 	run_button.disabled = true
 	run_button.pressed.connect(_on_run_button_press)
 	button_row.add_child(run_button)
-	
+
 	container.add_child(button_row)
+
+	var spacer = Control.new()
+	spacer.custom_minimum_size = Vector2(0, 20)
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	container.add_child(spacer)
+
+	var exit_row = HBoxContainer.new()
+	exit_row.alignment = BoxContainer.ALIGNMENT_CENTER
+
+	back_button = Button.new()
+	back_button.text = "Back"
+	back_button.custom_minimum_size = Vector2(150, 60)
+	back_button.pressed.connect(plugin.go_back)
+	exit_row.add_child(back_button)
+
+	exit_button = Button.new()
+	exit_button.visible = false
+	exit_button.text = "Exit"
+	exit_button.custom_minimum_size = Vector2(150, 60)
+	exit_button.pressed.connect(plugin._on_exit)
+	exit_row.add_child(exit_button)
+
+	container.add_child(exit_row)
 
 func _on_select_folder() -> void:
 	var file_dialog = EditorFileDialog.new()
@@ -132,6 +156,9 @@ func _on_folder_selected(path: String) -> void:
 
 func _on_run_button_press() -> void:
 	print("Running " + MODULE + " processing with folder: ", selected_folder_path)
+
+	back_button.visible = false
+	exit_button.visible = true
 	run_button.disabled = true
 	select_folder_button.disabled = true
 	status_label.text = "Processing started, see the Output tab for logs."
@@ -146,5 +173,7 @@ func _on_run_button_press() -> void:
 		print("Please review the logs, there was an error: " + error_string(err))
 
 	print("Processing finished!")
+
+	await plugin.get_tree().create_timer(5).timeout
 
 	plugin.close_popup()

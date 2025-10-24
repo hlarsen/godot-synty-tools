@@ -7,9 +7,8 @@ const DEBUG_LOGGING: bool = false
 func _post_import(scene: Node) -> Object:
 	var src_file: String = get_source_file()
 
-	print("Running Godot Synty Tools Sci-Fi City Post Import Script for: " + src_file)
-
 	if DEBUG_LOGGING:
+		print("Running Godot Synty Tools Sci-Fi City Post Import Script for: " + src_file)
 		print("Before: \n")
 		print_node_hierarchy(scene)
 
@@ -18,8 +17,6 @@ func _post_import(scene: Node) -> Object:
 	if DEBUG_LOGGING:
 		print("\nAfter: ")
 		print_node_hierarchy(scene)
-
-	print("Finishing running Post Import Script for " + src_file)
 
 	return scene
 
