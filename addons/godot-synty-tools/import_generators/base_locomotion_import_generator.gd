@@ -1,7 +1,7 @@
 @tool
 extends BaseImportGenerator
 
-# TODO: do we need to process Polygon and Sidekick if we're eventually just using Godot to map via Skeletons?
+# TODO: do we need to process both Polygon and Sidekick if we're eventually just using Godot to map via Skeletons?
 class_name BaseLocomotionImportGenerator
 
 var export_subdir: String = EXPORT_BASE_PATH.path_join(MODULE)
@@ -14,7 +14,7 @@ const ANIM_BONE_MAP_SIDEKICK: String = "res://addons/godot-synty-tools/bone_maps
 # The T-Pose animation we need to use as a RESET for the other animations
 const ANIM_TPOSE_PATH_POLYGON: String = "Polygon/Neutral/Additive/TPose/A_TPose_Neut.fbx"
 const ANIM_TPOSE_PATH_SIDEKICK: String = "Sidekick/Neutral/Additive/TPose/A_MOD_BL_TPose_Neut.fbx"
-const DELETE_TEMP_DIR: bool = false
+const DELETE_TEMP_DIR: bool = true
 const MODULE: String = "base_locomotion"
 const RESET_ANIM_NAME: String = "RESET"
 
@@ -29,7 +29,7 @@ func process() -> Error:
 		return err
 
 	print("Creating temp dir: " + MODULE)
-	var temp_dir: DirAccess = DirAccess.create_temp(MODULE)
+	var temp_dir: DirAccess = DirAccess.create_temp(MODULE, DELETE_TEMP_DIR)
 	if not temp_dir:
 		push_error("Can't create temp directory: " + error_string(temp_dir.get_open_error()))
 		return temp_dir.get_open_error()
@@ -47,7 +47,6 @@ func process() -> Error:
 		push_error("Error copying: " + error_string(err))
 		return err
 
-	# TODO: process animations and all that here
 	print("Re-importing T-Pose animations")
 	var temp_tpose_path_polygon: String = temp_dir_path.path_join(ANIM_TPOSE_PATH_POLYGON)
 	var temp_tpose_path_sidekick: String = temp_dir_path.path_join(ANIM_TPOSE_PATH_SIDEKICK)
@@ -56,7 +55,7 @@ func process() -> Error:
 	generate_tpose_anim_import_file(temp_tpose_path_polygon, export_subdir_tpose_path_polygon)
 	generate_tpose_anim_import_file(temp_tpose_path_sidekick, export_subdir_path_sidekick)
 
-	# copy fixed tpose files to a single dir, then to the project for import
+	print("Copy and import fixed T-Pose animations")
 	var fixed_tpose_files: Array[String] = [temp_tpose_path_polygon, temp_tpose_path_sidekick, temp_tpose_path_polygon + ".import", temp_tpose_path_sidekick + ".import"] 
 	for file in fixed_tpose_files:
 		err = FileUtils.copy_file(file, export_subdir.path_join(TPOSE_WORKING_DIR).path_join(file.get_file()))
@@ -71,12 +70,17 @@ func process() -> Error:
 		push_error("Failed to import T-Pose animation files")
 		return FAILED
 
-	print("Exporting the re-imported T-Pose animations and creating Animation Libraries")
+	print("Exporting the re-imported T-Pose animations")
 	var tpose_res_path_polygon: String = export_animation_rest_pose_resource(subdir_fixed_tpose_polygon, export_subdir_tpose_fixed)
 	var tpose_res_path_sidekick: String = export_animation_rest_pose_resource(subdir_fixed_tpose_sidekick, export_subdir_tpose_fixed)
+	if not (tpose_res_path_polygon or tpose_res_path_sidekick):
+		push_error("Could not create fixed T-Pose resources")
+		return FAILED
+
+	print("Creating animation libraries")
 	var anim_lib_res_path_polygon: String = create_tpose_animation_library(tpose_res_path_polygon, export_subdir_tpose_fixed)
 	var anim_lib_res_path_sidekick: String = create_tpose_animation_library(tpose_res_path_sidekick, export_subdir_tpose_fixed)
-	if not (tpose_res_path_polygon or tpose_res_path_sidekick or anim_lib_res_path_polygon or anim_lib_res_path_sidekick):
+	if not ( anim_lib_res_path_polygon or anim_lib_res_path_sidekick):
 		push_error("Could not create animation libraries")
 		return FAILED
 
@@ -84,15 +88,16 @@ func process() -> Error:
 #		push_error("Failed to import interim tpose files")
 #		return FAILED
 
-	var polygon_bone_map: BoneMap = ResourceLoader.load(ANIM_BONE_MAP_POLYGON)
-	var sidekick_bone_map: BoneMap = ResourceLoader.load(ANIM_BONE_MAP_SIDEKICK)
-	if not (polygon_bone_map or sidekick_bone_map):
-		push_error("Failed to load bone maps")
-		return FAILED
-
+	print("Loading T-Pose animation libraries and bone maps")
 	var polygon_anim_lib: AnimationLibrary = ResourceLoader.load(anim_lib_res_path_polygon)
 	var sidekick_anim_lib: AnimationLibrary = ResourceLoader.load(anim_lib_res_path_sidekick)
 	if not (polygon_anim_lib or sidekick_anim_lib):
+		push_error("Failed to load animation libraries")
+		return FAILED
+		
+	var polygon_bone_map: BoneMap = ResourceLoader.load(ANIM_BONE_MAP_POLYGON)
+	var sidekick_bone_map: BoneMap = ResourceLoader.load(ANIM_BONE_MAP_SIDEKICK)
+	if not (polygon_bone_map or sidekick_bone_map):
 		push_error("Failed to load bone maps")
 		return FAILED
 
@@ -119,6 +124,29 @@ func process() -> Error:
 
 	print("Creating final animation libraries")
 	create_animation_libraries(export_subdir)
+
+	print("Cleaning up files")
+	var cleanup_polygon: Array[String] = FileUtils.list_files_recursive(export_subdir.path_join("Polygon")).filter(func(f): return f.ends_with(".fbx"))
+	var cleanup_sidekick: Array[String] = FileUtils.list_files_recursive(export_subdir.path_join("Sidekick")).filter(func(f): return f.ends_with(".fbx"))
+	var cleanup_misc: Array[String] = [
+		export_subdir.path_join("Polygon").path_join("AC_Polygon_Feminine.controller"),
+		export_subdir.path_join("Polygon").path_join("AC_Polygon_Masculine.controller"),
+		export_subdir.path_join("Sidekick").path_join("AC_Sidekick_Feminine.controller"),
+		export_subdir.path_join("Sidekick").path_join("AC_Polygon_Masculine.controller"),
+		TPOSE_WORKING_DIR,
+	]
+
+	var files_to_delete = (cleanup_polygon + cleanup_sidekick + cleanup_misc)
+	for file in files_to_delete:
+		err = FileUtils.delete_directory_recursive(file)
+		if not err == OK:
+			push_error("Error deleting: " + error_string(err))
+			return err
+
+	err = FileUtils.delete_directory_recursive(TPOSE_WORKING_DIR)
+	if not err == OK:
+		push_error("Error deleting: " + error_string(err))
+		return err
 
 	return OK
 

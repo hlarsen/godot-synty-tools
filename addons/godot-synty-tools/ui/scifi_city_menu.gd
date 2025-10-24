@@ -2,26 +2,51 @@
 extends BaseMenu
 
 var file_dialog: EditorFileDialog
+var instruction_default: String = "Select the " + MODULE + " Animations/Polygon folder"
 var run_button: Button
 var select_folder_button: Button
 var selected_folder_label: Label
 var selected_folder_path: String = ""
 var status_label: Label
 
-var import_generator = preload("res://addons/godot-synty-tools/import_generators/scifi_city_import_generator.gd")
+var import_generator := preload("res://addons/godot-synty-tools/import_generators/scifi_city_import_generator.gd")
 
-const SYNTY_POST_IMPORT_SCRIPT = "res://addons/godot-synty-tools/post_import_scripts/scifi_city.gd"
+const MODULE: String = "Sci-Fi City"
+const SYNTY_POST_IMPORT_SCRIPT: String = "res://addons/godot-synty-tools/post_import_scripts/scifi_city.gd"
 
+# TODO: fold into base? might have to adjust vars
 func cleanup() -> void:
 	if file_dialog and is_instance_valid(file_dialog):
 		file_dialog.queue_free()
 		file_dialog = null
 	selected_folder_path = ""
 
+func validate_and_enable_run_button() -> void:
+	run_button.disabled = true
+
+	if selected_folder_path.is_empty():
+		print("Not Enabling Run Button: No folder selected")
+		return
+
+	var dir: DirAccess = DirAccess.open(selected_folder_path)
+	if dir == null:
+		print("Not Enabling Run Button: Cannot open dir: ", selected_folder_path)
+		return
+
+	if not dir.file_exists("MaterialList_PolygonSciFiCity.txt"):
+		print("Not enabling run button, could not find file: MaterialList_PolygonSciFiCity.txt")
+		return
+
+#	if not selected_folder_path.get_file() == "":
+#		print("Not Enabling Run Button: Invalid directory (): ", selected_folder_path)
+#		return
+
+	run_button.disabled = false
+
 func build_content() -> void:
 	# Instruction text
 	var instruction = Label.new()
-	instruction.text = "Select the Sci-Fi City folder to process"
+	instruction.text = instruction_default
 	instruction.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	instruction.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
 	container.add_child(instruction)
@@ -76,7 +101,7 @@ func _on_select_folder() -> void:
 	var file_dialog = EditorFileDialog.new()
 	file_dialog.file_mode = EditorFileDialog.FILE_MODE_OPEN_DIR
 	file_dialog.access = EditorFileDialog.ACCESS_FILESYSTEM
-	file_dialog.title = "Select Sci-Fi City Folder"
+	file_dialog.title = "Select " + MODULE + " Folder"
 	
 	file_dialog.dir_selected.connect(func(path):
 		_on_folder_selected(path)
@@ -99,36 +124,14 @@ func _on_folder_selected(path: String) -> void:
 		selected_folder_label.add_theme_color_override("font_color", Color(1, 1, 1))
 
 	print("Selected folder: ", path)
-	_validate_and_enable_run_button()
+	validate_and_enable_run_button()
 
 	if file_dialog:
 		file_dialog.queue_free()
 		file_dialog = null
 
-func _validate_and_enable_run_button() -> void:
-	run_button.disabled = true
-	
-	if selected_folder_path.is_empty():
-		print("Not Enabling Run Button: No folder selected")
-		return
-	
-	var dir: DirAccess = DirAccess.open(selected_folder_path)
-	if dir == null:
-		print("Not Enabling Run Button: Cannot open dir: ", selected_folder_path)
-		return
-	
-	if not dir.file_exists("MaterialList_PolygonSciFiCity.txt"):
-		print("Not enabling run button, could not find file: MaterialList_PolygonSciFiCity.txt")
-		return
-
-#	if not selected_folder_path.get_file() == "":
-#		print("Not Enabling Run Button: Invalid directory (): ", selected_folder_path)
-#		return
-
-	run_button.disabled = false
-
 func _on_run_button_press() -> void:
-	print("Running Sci-Fi City processing with folder: ", selected_folder_path)
+	print("Running " + MODULE + " processing with folder: ", selected_folder_path)
 	run_button.disabled = true
 	select_folder_button.disabled = true
 	status_label.text = "Processing started, see the Output tab for logs."

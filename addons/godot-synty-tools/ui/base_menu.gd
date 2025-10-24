@@ -14,16 +14,19 @@ func build_content() -> void:
 	pass
 
 # Override this for cleanup
+# TODO: fold into base? might have to adjust vars, not sure we need it
 func cleanup() -> void:
 #	push_warning("cleanup() has not been overriden in the child class")
 	pass
 
-# Call this from your submenu's show_menu
+# Override this for runtime checks before allowing processing
+func validate_and_enable_run_button() -> void:
+	pass
+
 func show_menu(button_grid: Control, popup_window: Window) -> void:
 	container = button_grid
 	window = popup_window
 	
-	# Clear existing children
 	for child in container.get_children():
 		child.queue_free()
 	

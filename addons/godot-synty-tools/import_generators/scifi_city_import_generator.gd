@@ -7,6 +7,7 @@ var selected_folder_path: String = ""
 var post_import_script: String = POST_IMPORT_SCRIPT_BASE_PATH.path_join("scifi_city.gd") 
 
 const DELETE_TEMP_DIR: bool = true
+const MODULE: String = "scifi_city"
 
 func process() -> Error:
 #	print("Deleting output directory before new run: " + export_subdir)
@@ -15,8 +16,8 @@ func process() -> Error:
 		push_error("Error deleting directory: " + export_subdir)
 		return err
 
-	print("Creating temp dir")
-	var temp_dir: DirAccess = DirAccess.create_temp("scifi_import", DELETE_TEMP_DIR)
+	print("Creating temp dir: " + MODULE)
+	var temp_dir: DirAccess = DirAccess.create_temp(MODULE, DELETE_TEMP_DIR)
 	if not temp_dir:
 		push_error("Can't create temp directory: " + error_string(temp_dir.get_open_error()))
 		return temp_dir.get_open_error()
