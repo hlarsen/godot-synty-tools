@@ -22,7 +22,7 @@ one is an issue. Pass in your `Animations/Polygon` folder and the addon will out
 AnimationLibraries for the main folders.
 
 You can add use these new Resource files in the AnimationPlayer of a character who is properly mapped to Godot's
-`SkeletonProfileHumanoid`.
+`SkeletonProfileHumanoid`. If you're having issues adding to a character, make sure they have a bone map!
 
 #### Sci-Fi City
 
