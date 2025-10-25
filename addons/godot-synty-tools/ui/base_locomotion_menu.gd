@@ -155,8 +155,6 @@ func _on_folder_selected(path: String) -> void:
 		file_dialog = null
 
 func _on_run_button_press() -> void:
-	print("Running " + MODULE + " processing with folder: ", selected_folder_path)
-
 	back_button.visible = false
 	exit_button.visible = true
 	run_button.disabled = true
@@ -171,8 +169,6 @@ func _on_run_button_press() -> void:
 	var err: Error = await import_generator.process()
 	if not err == OK:
 		print("Please review the logs, there was an error: " + error_string(err))
-
-	print("Processing finished!")
 
 	await plugin.get_tree().create_timer(5).timeout
 

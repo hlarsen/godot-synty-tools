@@ -21,14 +21,19 @@ The Synty Base Locomotion source files do not have a proper T-Pose Rest Pose, so
 one is an issue. Pass in your `Animations/Polygon` folder and the addon will output fixed Animation files as well as
 AnimationLibraries for the main folders.
 
-You can add use these new Resource files in the AnimationPlayer of a character who is properly mapped to Godot's
-`SkeletonProfileHumanoid`. If you're having issues adding to a character, make sure they have a bone map!
+To use the output Animations or Animation Libraries make sure your character's Skeleton3D is properly mapped (very
+likely via a bone map) to Godot's default `SkeletonProfileHumanoid`.
+
+TODO: issue with same skels/bones?
+
+Then just add them via `AnimationPlayer` or whatever and you should be good to go!
 
 #### Sci-Fi City
 
 This is a work in progress, currently:
 
 - Exports cleaned up SM_ files (TODO: should probably change default collision type)
+- Split characters out into individual mesh files
 
 ### Feedback and Future Work
 

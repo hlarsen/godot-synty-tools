@@ -15,13 +15,14 @@ const ANIM_BONE_MAP_SIDEKICK: String = "res://addons/godot-synty-tools/bone_maps
 const ANIM_TPOSE_PATH_POLYGON: String = "Polygon/Neutral/Additive/TPose/A_TPose_Neut.fbx"
 const ANIM_TPOSE_PATH_SIDEKICK: String = "Sidekick/Neutral/Additive/TPose/A_MOD_BL_TPose_Neut.fbx"
 const DELETE_TEMP_DIR: bool = true
+const IMPORT_WAIT_TIMEOUT: int = 60
 const MODULE: String = "base_locomotion"
 const RESET_ANIM_NAME: String = "RESET"
-
-const IMPORT_WAIT_TIMEOUT: int = 60
 const TPOSE_WORKING_DIR: String = "tpose_files_interim"
 
 func process() -> Error:
+	print("Running " + MODULE + " processing with folder: ", selected_folder_path)
+
 #	print("Deleting output directory before new run: " + export_subdir)
 	var err: Error = FileUtils.delete_directory_recursive(export_subdir)
 	if not err == OK:
@@ -147,6 +148,8 @@ func process() -> Error:
 		push_error("Error deleting: " + error_string(err))
 		return err
 
+	print("Finished running " + MODULE + " processing with folder: ", selected_folder_path)
+
 	return OK
 
 func generate_tpose_anim_import_file(src_file: String, tmp_file_path: String) -> Error:
@@ -175,10 +178,12 @@ func generate_animation_fbx_import_file(src_file: String, tmp_file_path: String,
 	var subresources_dict: Dictionary[String, Variant] = {
 		"nodes": {
 			"PATH:Skeleton3D": {
+				"unique_name_in_owner": false,
 				"rest_pose/load_pose": 2,
 				"rest_pose/external_animation_library": anim_library,
 				"rest_pose/selected_animation": RESET_ANIM_NAME,
 				"retarget/bone_map": bone_map,
+				"retarget/bone_renamer/unique_node/make_unique": false,
 			}
 		}
 	}
