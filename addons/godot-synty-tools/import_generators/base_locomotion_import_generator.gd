@@ -14,7 +14,7 @@ const ANIM_BONE_MAP_SIDEKICK: String = "res://addons/godot-synty-tools/bone_maps
 # The T-Pose animation we need to use as a RESET for the other animations
 const ANIM_TPOSE_PATH_POLYGON: String = "Polygon/Neutral/Additive/TPose/A_TPose_Neut.fbx"
 const ANIM_TPOSE_PATH_SIDEKICK: String = "Sidekick/Neutral/Additive/TPose/A_MOD_BL_TPose_Neut.fbx"
-const DELETE_TEMP_DIR: bool = true
+const KEEP_TEMP_DIR: bool = false
 const IMPORT_WAIT_TIMEOUT: int = 60
 const MODULE: String = "base_locomotion"
 const RESET_ANIM_NAME: String = "RESET"
@@ -30,7 +30,7 @@ func process() -> Error:
 		return err
 
 	print("Creating temp dir: " + MODULE)
-	var temp_dir: DirAccess = DirAccess.create_temp(MODULE, DELETE_TEMP_DIR)
+	var temp_dir: DirAccess = DirAccess.create_temp(MODULE, KEEP_TEMP_DIR)
 	if not temp_dir:
 		push_error("Can't create temp directory: " + error_string(temp_dir.get_open_error()))
 		return temp_dir.get_open_error()
@@ -178,7 +178,7 @@ func generate_animation_fbx_import_file(src_file: String, tmp_file_path: String,
 	var subresources_dict: Dictionary[String, Variant] = {
 		"nodes": {
 			"PATH:Skeleton3D": {
-				"unique_name_in_owner": false,
+#				"unique_name_in_owner": false,
 				"rest_pose/load_pose": 2,
 				"rest_pose/external_animation_library": anim_library,
 				"rest_pose/selected_animation": RESET_ANIM_NAME,

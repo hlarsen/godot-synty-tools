@@ -7,7 +7,7 @@ var selected_folder_path: String = ""
 var post_import_script: String = POST_IMPORT_SCRIPT_BASE_PATH.path_join("scifi_city.gd") 
 
 const BONE_MAP: String = "res://addons/godot-synty-tools/bone_maps/scifi_city_v4.tres"
-const DELETE_TEMP_DIR: bool = true
+const KEEP_TEMP_DIR: bool = false
 const IMPORT_WAIT_TIMEOUT: int = 60
 const MODULE: String = "scifi_city"
 
@@ -21,7 +21,7 @@ func process() -> Error:
 		return err
 
 	print("Creating temp dir: " + MODULE)
-	var temp_dir: DirAccess = DirAccess.create_temp(MODULE, DELETE_TEMP_DIR)
+	var temp_dir: DirAccess = DirAccess.create_temp(MODULE, KEEP_TEMP_DIR)
 	if not temp_dir:
 		push_error("Can't create temp directory: " + error_string(temp_dir.get_open_error()))
 		return temp_dir.get_open_error()
@@ -30,15 +30,26 @@ func process() -> Error:
 	print("Using temp dir: " + temp_dir_path)
 	print("Copying files from " + selected_folder_path + " to " + temp_dir_path)
 	err = FileUtils.copy_directory_recursive(selected_folder_path.path_join("FBX"), temp_dir_path.path_join("FBX"))
+
+	# copy text textures to the project first because we reference them in the post import of the fbx files
+	print("Copying files from " + selected_folder_path.path_join("Textures") + " to " + export_subdir.path_join("Textures"))
+	err = FileUtils.copy_directory_recursive(selected_folder_path.path_join("Textures"), export_subdir.path_join("Textures"))
 	if not err == OK:
 		push_error("Error copying: " + error_string(err))
 		return err
 
-	err = FileUtils.copy_directory_recursive(selected_folder_path.path_join("Textures"), temp_dir_path.path_join("Textures"))
-	if not err == OK:
-		push_error("Error copying: " + error_string(err))
-		return err
+	if not await reimport_files(FileUtils.list_files_recursive(export_subdir.path_join("Textures")), 10):
+		push_error("Failed to import textures files")
+		return FAILED
 
+#	# do we need materials processing first?
+#	print("Processing materials")
+#	var textures: Array[String] = FileUtils.list_files_recursive(export_subdir.path_join("Textures")).filter(func(f): return f.ends_with(".png"))
+#	for tex_fn in textures:
+#		var tex: Texture2D = ResourceLoader.load(tex_fn)
+##		print("Loaded:", tex_fn, "Class:", tex.get_class(), "Size:", tex.get_size())
+
+	# textures are in the project, time for the fbx files
 	var imports_to_create: Array[String] = FileUtils.list_files_recursive(temp_dir_path).filter(func(f): return f.ends_with(".fbx"))
 	var expected_imports: Array[String] = []
 	print("Adding .import files for " + str(imports_to_create.size()) + " FBX files in " + temp_dir_path)
@@ -106,7 +117,7 @@ func generate_character_fbx_import_file(src_file: String, tmp_file_path: String,
 	var subresources_dict: Dictionary[String, Variant] = {
 		"nodes": {
 			"PATH:Skeleton3D": {
-				"unique_name_in_owner": false,
+#				"unique_name_in_owner": false,
 				"retarget/bone_map": bone_map,
 				"retarget/bone_renamer/unique_node/make_unique": false,
 			}
