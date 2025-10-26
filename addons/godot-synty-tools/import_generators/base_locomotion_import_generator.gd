@@ -81,7 +81,7 @@ func process() -> Error:
 	print("Creating animation libraries")
 	var anim_lib_res_path_polygon: String = create_tpose_animation_library(tpose_res_path_polygon, export_subdir_tpose_fixed)
 	var anim_lib_res_path_sidekick: String = create_tpose_animation_library(tpose_res_path_sidekick, export_subdir_tpose_fixed)
-	if not ( anim_lib_res_path_polygon or anim_lib_res_path_sidekick):
+	if not (anim_lib_res_path_polygon or anim_lib_res_path_sidekick):
 		push_error("Could not create animation libraries")
 		return FAILED
 
@@ -124,7 +124,8 @@ func process() -> Error:
 		return FAILED
 
 	print("Creating final animation libraries")
-	create_animation_libraries(export_subdir)
+	create_animation_libraries(export_subdir.path_join("Polygon"), export_subdir)
+	create_animation_libraries(export_subdir.path_join("Sidekick"), export_subdir)
 
 	print("Cleaning up files")
 	var cleanup_polygon: Array[String] = FileUtils.list_files_recursive(export_subdir.path_join("Polygon")).filter(func(f): return f.ends_with(".fbx"))
@@ -234,39 +235,42 @@ func create_tpose_animation_library(tpose_rest_res_path: String, temp_dir_path: 
 
 	return library_path
 
-func create_animation_libraries(root_export_dir: String) -> Error:
-	var dir: DirAccess = DirAccess.open(root_export_dir)
+func create_animation_libraries(target_dir: String, export_dir: String) -> Error:
+	var dir := DirAccess.open(target_dir)
 	if not dir:
-		push_error("Can't open root export directory: " + root_export_dir)
+		push_error("Can't open target directory: " + target_dir)
 		return FAILED
+
+	var base_prefix := target_dir.get_file() # e.g., "Base"
 
 	dir.include_navigational = false
 	dir.include_hidden = false
 	dir.list_dir_begin()
-	var folder_name: String = dir.get_next()
+
+	var folder_name := dir.get_next()
 	while folder_name != "":
 		if folder_name in [".", "..", TPOSE_WORKING_DIR]:
 			folder_name = dir.get_next()
 			continue
 
-		var subfolder_path: String = root_export_dir.path_join(folder_name)
 		if dir.current_is_dir():
-			create_anim_library_for_dir(subfolder_path, root_export_dir)
+			var top_level_path := target_dir.path_join(folder_name)
+			var lib := AnimationLibrary.new()
+			var lib_name := "%s-%s" % [base_prefix, folder_name]
+			lib.set_name(lib_name)
+
+			# Add all animations under this top-level folder
+			add_animations_recursive(top_level_path, lib, "")
+
+			if lib.get_animation_list().size() > 0:
+				var lib_path := export_dir.path_join(lib_name + ".tres")
+				var result := ResourceSaver.save(lib, lib_path)
+				if result != OK:
+					push_warning("Failed saving animation library: " + lib_path)
 		folder_name = dir.get_next()
 	dir.list_dir_end()
 
 	return OK
-
-func create_anim_library_for_dir(folder_path: String, export_dir: String) -> Error:
-	var lib: AnimationLibrary = AnimationLibrary.new()
-	lib.set_name(folder_path.get_file())
-
-	add_animations_recursive(folder_path, lib, "")
-	if not lib.get_animation_list().size() > 0:
-		return FAILED
-	
-	var lib_path: String = export_dir.path_join(folder_path.get_file() + ".tres")
-	return ResourceSaver.save(lib, lib_path)
 
 func add_animations_recursive(current_path: String, lib: AnimationLibrary, relative_prefix: String) -> void:
 	var dir: DirAccess = DirAccess.open(current_path)
@@ -290,34 +294,33 @@ func add_animations_recursive(current_path: String, lib: AnimationLibrary, relat
 				new_prefix += " - "
 			new_prefix += file_name
 			add_animations_recursive(file_path, lib, new_prefix)
-		else:
-			if file_name.ends_with(".res"):
-				var anim: Resource = ResourceLoader.load(file_path)
-				if anim:
-					var anim_name: String = relative_prefix
-					if anim_name != "":
-						anim_name += " - "
-					anim_name += file_name.get_basename()
+		elif file_name.ends_with(".res"):
+			var anim: Resource = ResourceLoader.load(file_path)
+			if anim:
+				var anim_name: String = relative_prefix
+				if anim_name != "":
+					anim_name += " - "
+				anim_name += file_name.get_basename()
 
-					# clean up the names a bit
-					var polygon_replacements: Dictionary[String, String] = {
-						" - A_": " - ",
-						"_Femn": "",
-						"_Masc": "",
-						"_Neut": "",
-						"_": ""
-					}
+				# clean up the names a bit
+				var polygon_replacements: Dictionary[String, String] = {
+					" - A_": " - ",
+					"_Femn": "",
+					"_Masc": "",
+					"_Neut": "",
+					"_": ""
+				}
 
-					var sidekick_replacements: Dictionary[String, String] = {
-						"MODBL": "",
-					}
+				var sidekick_replacements: Dictionary[String, String] = {
+					"MODBL": "",
+				}
 
-					for old in polygon_replacements.keys():
-						anim_name = anim_name.replace(old, polygon_replacements[old])
+				for old in polygon_replacements.keys():
+					anim_name = anim_name.replace(old, polygon_replacements[old])
 
-					for old in sidekick_replacements.keys():
-						anim_name = anim_name.replace(old, sidekick_replacements[old])
+				for old in sidekick_replacements.keys():
+					anim_name = anim_name.replace(old, sidekick_replacements[old])
 
-					lib.add_animation(anim_name, anim)
+				lib.add_animation(anim_name, anim)
 		file_name = dir.get_next()
 	dir.list_dir_end()
