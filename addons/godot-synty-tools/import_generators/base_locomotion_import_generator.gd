@@ -178,12 +178,12 @@ func generate_animation_fbx_import_file(src_file: String, tmp_file_path: String,
 	var subresources_dict: Dictionary[String, Variant] = {
 		"nodes": {
 			"PATH:Skeleton3D": {
-#				"unique_name_in_owner": false,
 				"rest_pose/load_pose": 2,
 				"rest_pose/external_animation_library": anim_library,
 				"rest_pose/selected_animation": RESET_ANIM_NAME,
 				"retarget/bone_map": bone_map,
 				"retarget/bone_renamer/unique_node/make_unique": false,
+				"retarget/bone_renamer/unique_node/skeleton_name": "Skeleton3D",
 			}
 		}
 	}

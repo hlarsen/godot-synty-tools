@@ -58,20 +58,11 @@ func process() -> Error:
 			continue
 
 		if file.ends_with("Characters.fbx"):
-			var bone_map: BoneMap = ResourceLoader.load(BONE_MAP)
-			if not bone_map:
-				push_error("Failed to load bone map")
-				return FAILED
-
-			err = generate_character_fbx_import_file(file, temp_dir_path, bone_map)
-			if not err == OK:
-				push_error("Error updating character file: " + error_string(err))
-				return err
-
-			expected_imports.append(file.replace(temp_dir_path, export_subdir))
+			print("Processing Characters.fbx")
+			await process_characters(file, temp_dir_path, export_subdir)
+#			expected_imports.append(file.replace(temp_dir_path, export_subdir))
 			continue
 
-#		print("Generating import file for: " + file)
 		var tmp_file_path: String = file.replace(temp_dir_path, export_subdir)
 		err = generate_fbx_import_file(file, tmp_file_path)
 		if not err == OK:
@@ -86,7 +77,13 @@ func process() -> Error:
 		push_error("Error copying: " + error_string(err))
 		return err
 
-	if not await reimport_files(expected_imports, IMPORT_WAIT_TIMEOUT):
+	# delete Characters.fbx (we created separate char files so we don't need it)
+	err = DirAccess.remove_absolute(export_subdir.path_join("FBX").path_join("Characters.fbx"))
+	if not err == OK:
+		push_error("Error deleting: " + error_string(err))
+		return err
+
+	if not await reimport_files([], IMPORT_WAIT_TIMEOUT):
 		push_error("Failed to import fixed animation files")
 		return FAILED
 
@@ -109,6 +106,7 @@ func generate_character_fbx_import_file(src_file: String, tmp_file_path: String,
 
 	# NOTE: minimum requirements for importing an FBX appear to be: deps > source_file and params/fbx_importer
 	config.set_value("deps", "source_file", tmp_file_path)
+	config.set_value("params", "nodes/root_type", "CharacterBody3D")	# 
 	config.set_value("params", "import_script/path", post_import_script)
 	config.set_value("params", "fbx/importer", 0)
 
@@ -117,9 +115,9 @@ func generate_character_fbx_import_file(src_file: String, tmp_file_path: String,
 	var subresources_dict: Dictionary[String, Variant] = {
 		"nodes": {
 			"PATH:Skeleton3D": {
-#				"unique_name_in_owner": false,
 				"retarget/bone_map": bone_map,
 				"retarget/bone_renamer/unique_node/make_unique": false,
+				"retarget/bone_renamer/unique_node/skeleton_name": "Skeleton3D",
 			}
 		}
 	}
@@ -127,3 +125,48 @@ func generate_character_fbx_import_file(src_file: String, tmp_file_path: String,
 	config.set_value("params", "_subresources", subresources_dict)
 
 	return config.save(src_file + ".import")
+
+func process_characters(file_src, temp_dir_path, export_subdir) -> Error:
+	var imported_path = export_subdir.path_join("FBX").path_join(file_src.get_file())
+	var err: Error = FileUtils.copy_file(file_src, imported_path)
+	if not err == OK:
+		push_error("Error copying: " + error_string(err))
+		return err
+
+	if not await reimport_files([imported_path]):
+		push_error("Failed to reimport Characters.fbx")
+		return FAILED
+
+	var bone_map: BoneMap = ResourceLoader.load(BONE_MAP)
+	if not bone_map:
+		push_error("Failed to load bone map")
+		return FAILED
+
+	print("Load scene for: " + imported_path)
+	var scene = load(imported_path)
+	if not scene:
+		push_error("Failed to load: " + imported_path)
+		return ERR_CANT_OPEN
+
+	var root = scene.instantiate()
+	var meshes: Array[Variant] = []
+
+	for child in root.get_node("Skeleton3D").get_children():
+		if child is MeshInstance3D:
+			meshes.append(child)
+
+	for mesh in meshes:
+		print("Creating separate character for mesh: " + mesh.name)
+		var save_path = temp_dir_path.path_join("FBX").path_join(mesh.name + ".fbx")
+		err = FileUtils.copy_file(file_src, save_path)
+		if not err == OK:
+			push_error("Error saving new char file: " + error_string(err))
+			return err
+
+		print("Generating .import for character " + save_path.get_file() + " in dir " + temp_dir_path)
+		err = generate_character_fbx_import_file(save_path, temp_dir_path, bone_map)
+		if not err == OK:
+			push_error("Error creating .import file: " + error_string(err))
+			return err
+
+	return OK
