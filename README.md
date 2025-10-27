@@ -22,18 +22,20 @@ one is an issue. Pass in your `Animations/Polygon` folder and the addon will out
 AnimationLibraries for the main folders.
 
 To use the output Animations or Animation Libraries make sure your character's Skeleton3D is properly mapped (very
-likely via a bone map) to Godot's default `SkeletonProfileHumanoid`.
+likely via a bone map) to Godot's default `SkeletonProfileHumanoid`, and that your Skeleton3D node is named `Skeleton3D`.
 
-TODO: issue with same skels/bones?
-
-Then just add them via `AnimationPlayer` or whatever and you should be good to go!
+Just add to an AnimationPlayer and you should be good to go.
 
 #### Sci-Fi City
 
-This is a work in progress, currently:
+This is a work in progress, but at this point I believe it's fairly robust:
 
-- Exports cleaned up SM_ files (TODO: should probably change default collision type)
-- Split characters out into individual mesh files
+- Splits Characters.fbx out into individual files
+- Cleans up the object heirarchy
+- Fixes default materials
+
+If you've already run the addon against the Base Locomotion pack it will apply the Polygon Masculine library to the
+characters automatically.
 
 ### Feedback and Future Work
 
@@ -41,7 +43,7 @@ The bone map versions in `bone_maps` should match the asset pack versions. The b
 packs I have licenses for - if anyone wants to say thanks by gifting me licenses for other packs I can add those as
 well ;)
 
-If there are any issues, please let me know.
+If there are any issues or suggestions, please let me know - you can reach me at hlarsen on the Synty discord.
 
 ## Usage
 

@@ -1,8 +1,6 @@
 @tool
 extends EditorScenePostImport
 
-class_name ScifiCityPostImport
-
 const DEBUG_LOGGING: bool = false
 const GST_POLYGON_MASC_ANIM_LIB: String = "res://godot-synty-tools-output/base_locomotion/Polygon-Masculine.tres"
 
@@ -54,8 +52,6 @@ func process_scene(scene: Node, src_file: String) -> Node:
 		scene = process_character(scene, src_file)
 	elif src_base_fn.begins_with("SM_"):
 		scene = process_sm_staticbody3d_root(scene, src_file)
-		# NOTE: alternate output scene setup
-#		scene = _process_sm_meshinstance3d_root(scene, src_file)
 	else:
 		print("Not modifying unhandled file: " + src_file)
 
@@ -72,14 +68,17 @@ func process_sm_staticbody3d_root(scene: Node, src_file: String) -> Node:
 		if DEBUG_LOGGING:
 			print("Child: ", child.name, " (", child.get_class(), ")")
 		if child is MeshInstance3D:
+#			print("Processing mesh")
 			scene.remove_child(child)
 			child.set_owner(null)
 			body.add_child(child)
 			child.set_owner(body)
 			set_owner_recursive(child, body)
 
-			# add collision to mesh
-			var shape: CollisionShape3D = generate_collision(child)
+			# TODO: collider shapes?
+#			print("Adding collision")
+			var shape: CollisionShape3D = generate_box_collider(child)
+#			var shape: CollisionShape3D = generate_trimesh_collider(child)
 			if not shape:
 				return scene
 
@@ -94,38 +93,11 @@ func process_sm_staticbody3d_root(scene: Node, src_file: String) -> Node:
 
 	return body
 
-# TODO: what shape(s)? testing...
-func generate_collision(mesh: MeshInstance3D) -> CollisionShape3D:
-	if not mesh.mesh:
-		print("Skipping collision: mesh is null for " + mesh.name)
-		return null
-
-#	var collision_shape: ConcavePolygonShape3D = mesh.mesh.create_trimesh_shape()
-#	if not collision_shape:
-#		print("Skipping collision: could not generate collision shape")
-#		return null
-
-	# Create a box that matches the mesh AABB/bounding box
-	var aabb: AABB = mesh.mesh.get_aabb()
-	var collision_shape := BoxShape3D.new()
-	if not collision_shape:
-		print("Skipping collision: could not generate collision shape")
-		return null
-	collision_shape.size = aabb.size
-
-	var shape = CollisionShape3D.new()
-	shape.shape = collision_shape
-	shape.name = "CollisionShape3D"
-#	shape.name = mesh.name + "_Collision"
-	shape.position = aabb.position + (aabb.size * 0.5)
-
-	return shape
-
 func process_character(scene: Node, char_file_path: String) -> Node:
 	print("Processing fixed character " + scene.name + " at " + char_file_path)
 	var char_name: String = scene.name.replace(".fbx", "")
 
-	# delete extra meshes	
+	print("Deleting extra meshes")	
 	for child in scene.get_children():
 		if child is Skeleton3D:
 			for gchild in child.get_children():
@@ -140,17 +112,15 @@ func process_character(scene: Node, char_file_path: String) -> Node:
 			scene.remove_child(child)
 			child.queue_free()
 
-	# collision
 #	print("Adding collision")
 	var char_skeleton: Skeleton3D = scene.get_node("Skeleton3D")
-	# TODO: testing shapes
-	var collision: CollisionShape3D = make_collision_for_skel(char_skeleton)
+	# TODO: collider shapes?
+	var collision: CollisionShape3D = generate_char_collsion_from_skel(char_skeleton)
 #	var collision: CollisionShape3D = make_collision_for_mesh(char_skeleton.get_node(char_name))
 	if collision:
 		scene.add_child(collision)
 		collision.set_owner(scene)
 
-	# animation
 #	print("Adding anim player")
 	var anim_player = AnimationPlayer.new()
 	anim_player.name = "AnimationPlayer"
@@ -160,7 +130,9 @@ func process_character(scene: Node, char_file_path: String) -> Node:
 	# preload anim lib if it exists in our output dir
 	if FileAccess.file_exists(GST_POLYGON_MASC_ANIM_LIB):
 		var anim_lib: AnimationLibrary = load(GST_POLYGON_MASC_ANIM_LIB)
-		anim_player.add_animation_library("Polygon Masculine", anim_lib)
+		var err: Error = anim_player.add_animation_library("Polygon Masculine", anim_lib)
+		if not err == OK:
+			push_error("Could not add animation library to animation player")
 
 #	print("Adding anim tree")
 #	add_animation_tree(scene, anim_player)
@@ -169,11 +141,49 @@ func process_character(scene: Node, char_file_path: String) -> Node:
 
 	return scene
 
+func generate_box_collider(mesh: MeshInstance3D) -> CollisionShape3D:
+	if not mesh.mesh:
+		print("Skipping collision: mesh is null for " + mesh.name)
+		return null
+
+	# measure mesh
+	var aabb: AABB = mesh.mesh.get_aabb()
+	var collision_shape := BoxShape3D.new()
+	if not collision_shape:
+		print("Skipping collision: could not generate collision shape")
+		return null
+	collision_shape.size = aabb.size
+
+	var shape = CollisionShape3D.new()
+	shape.shape = collision_shape
+	shape.name = "CollisionShape3D"
+
+	# adjust the position due to meshes having origin at floor
+	shape.position = aabb.position + (aabb.size * 0.5)
+
+	return shape
+
+func generate_trimesh_collider(mesh: MeshInstance3D) -> CollisionShape3D:
+	if not mesh.mesh:
+		print("Skipping collision: mesh is null for " + mesh.name)
+		return null
+
+	var collision_shape: ConcavePolygonShape3D = mesh.mesh.create_trimesh_shape()
+	if not collision_shape:
+		print("Skipping collision: could not generate collision shape")
+		return null
+
+	var shape = CollisionShape3D.new()
+	shape.shape = collision_shape
+	shape.name = "CollisionShape3D"
+
+	return shape
+
 # TODO: test
-func make_collision_for_skel(skel: Skeleton3D) -> CollisionShape3D:
-	# Compute top and bottom of skeleton bones
-	var min_y = INF
-	var max_y = -INF
+func generate_char_collsion_from_skel(skel: Skeleton3D) -> CollisionShape3D:
+	# compute top and bottom of skeleton bones
+	var min_y:float = INF
+	var max_y:float = -INF
 	for bone_idx in range(skel.get_bone_count()):
 		var bone_transform: Transform3D = skel.get_bone_global_pose(bone_idx)
 		var y: float = bone_transform.origin.y
@@ -182,51 +192,49 @@ func make_collision_for_skel(skel: Skeleton3D) -> CollisionShape3D:
 		if y > max_y:
 			max_y = y
 
-	var height = max_y - min_y
+	var height: float = max_y - min_y
 	var capsule = CapsuleShape3D.new()
-#	capsule.height = height * 0.9	 # slightly smaller than full skeleton height
 	capsule.radius = height * 0.2	 # approximate shoulder width
 
 	var collision = CollisionShape3D.new()
 	collision.name = "CollisionShape3D"
 	collision.shape = capsule
 
-#	 Center the collision node on skeleton
-#	collision.position.y = (min_y + max_y) * 0.5
-
-	# test padding
+	# height padding
 	capsule.height = height * 1.05  # +5% to cover head/feet
+
+	# adjust the position due to meshes having origin at floor
 	collision.position.y = (min_y + max_y) * 0.5
 
 	return collision
 
 # TODO: test
-func make_collision_for_mesh(mesh_instance: MeshInstance3D) -> CollisionShape3D:
+func generate_char_collision_from_mesh(mesh_instance: MeshInstance3D) -> CollisionShape3D:
 	if not mesh_instance or not mesh_instance.mesh:
 		push_warning("make_collision_for_mesh: No mesh assigned to " + str(mesh_instance))
 		return null
 
-	# Get the mesh’s overall bounds
+	# measure mesh
 	var aabb: AABB = mesh_instance.mesh.get_aabb()
 	var height: float = aabb.size.y
 	var radius = max(aabb.size.x, aabb.size.z) * 0.25  # approximate shoulder width
 
-	# Create capsule shape
+	# create capsule shape
 	var capsule = CapsuleShape3D.new()
 	capsule.height = height * 1.05  # +5% padding for coverage
 	capsule.radius = radius
 
-	# Create collision shape node
+	# create collision shape node
 	var collision = CollisionShape3D.new()
 	collision.name = "CollisionShape3D"
 	collision.shape = capsule
 
-	# Position at the center of the mesh bounds
+	# adjust the position due to meshes having origin at floor
 	collision.position = aabb.position + (aabb.size * 0.5)
 
 	return collision
 
-# TODO: testing
+# TODO: test
 func add_animation_tree(scene: Node, anim_player: AnimationPlayer) -> void:
 	var anim_tree := AnimationTree.new()
 	anim_tree.name = "AnimationTree"
@@ -234,13 +242,12 @@ func add_animation_tree(scene: Node, anim_player: AnimationPlayer) -> void:
 	anim_tree.owner = scene
 	anim_tree.anim_player = anim_tree.get_path_to(anim_player)
 
-	# Build the state machine
-	var state_machine := AnimationNodeStateMachine.new()
+#	return
 
-	# Add the machine as the root of the tree
+	var state_machine := AnimationNodeStateMachine.new()
 	anim_tree.tree_root = state_machine
 
-	# Create state nodes for each animation
+	# create state nodes for each animation
 	for state_name in ["idle", "walk", "run", "jump"]:
 		if anim_player.has_animation(state_name):
 			var node := AnimationNodeAnimation.new()
@@ -249,7 +256,7 @@ func add_animation_tree(scene: Node, anim_player: AnimationPlayer) -> void:
 		else:
 			print("Animation not found:", state_name)
 
-	# Add transitions (each one needs its own transition object)
+	# add transitions (each one needs its own transition object)
 	var t1 := AnimationNodeStateMachineTransition.new()
 	state_machine.add_transition("idle", "walk", t1)
 

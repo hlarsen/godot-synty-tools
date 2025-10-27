@@ -1,6 +1,5 @@
 @tool
 extends BaseImportGenerator
-
 # TODO: do we need to process both Polygon and Sidekick if we're eventually just using Godot to map via Skeletons?
 class_name BaseLocomotionImportGenerator
 
@@ -14,8 +13,8 @@ const ANIM_BONE_MAP_SIDEKICK: String = "res://addons/godot-synty-tools/bone_maps
 # The T-Pose animation we need to use as a RESET for the other animations
 const ANIM_TPOSE_PATH_POLYGON: String = "Polygon/Neutral/Additive/TPose/A_TPose_Neut.fbx"
 const ANIM_TPOSE_PATH_SIDEKICK: String = "Sidekick/Neutral/Additive/TPose/A_MOD_BL_TPose_Neut.fbx"
-const KEEP_TEMP_DIR: bool = false
 const IMPORT_WAIT_TIMEOUT: int = 60
+const KEEP_TEMP_DIR: bool = false
 const MODULE: String = "base_locomotion"
 const RESET_ANIM_NAME: String = "RESET"
 const TPOSE_WORKING_DIR: String = "tpose_files_interim"
@@ -123,6 +122,7 @@ func process() -> Error:
 		push_error("Failed to import fixed animation files")
 		return FAILED
 
+	# NOTE: this happens now, but we haven't generated the actual animation Resources yet - this happens in post import
 	print("Creating final animation libraries")
 	create_animation_libraries(export_subdir.path_join("Polygon"), export_subdir)
 	create_animation_libraries(export_subdir.path_join("Sidekick"), export_subdir)

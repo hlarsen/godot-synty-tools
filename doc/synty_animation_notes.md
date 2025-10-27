@@ -18,3 +18,10 @@ animations"?
 Basically we have to tell Godot "this animation's bones map to these SkeletonProfileHumanoid bones" and "this
 character's bones map to these SkeletonProfileHumanoid bones" and then Godot can drive everything correctly, even
 without matching bones.
+
+## Skeleton Names
+
+During my testing it appears that the Godot Skeleton3D node name needs to match the name in the "bone path" of the
+animations, which you can see above the bone tracks after adding an AnimationPlayer and loading the animation. If you
+rename this it won't work, and if you rename it back it will. I'm not sure if this is something that can be fixed or
+adjusted, but please let me know if so and I can test it out.

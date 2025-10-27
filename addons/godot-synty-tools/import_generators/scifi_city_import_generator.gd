@@ -7,10 +7,11 @@ var selected_folder_path: String = ""
 var post_import_script: String = POST_IMPORT_SCRIPT_BASE_PATH.path_join("scifi_city.gd") 
 
 const BONE_MAP: String = "res://addons/godot-synty-tools/bone_maps/scifi_city_v4.tres"
-const KEEP_TEMP_DIR: bool = false
 const IMPORT_WAIT_TIMEOUT: int = 60
+const KEEP_TEMP_DIR: bool = false
 const MODULE: String = "scifi_city"
-const FILE_MAP = {
+# TODO: debug files that don't work/are incorrect
+const FILE_MAP: Dictionary[String, String] = {
 	"SM_Bld_Background_": "PolygonScifi_Background_Building_Emissive", # no albedo texture
 	"_Glass": "Glass_01_A",	# no albedo texture (match Glass?)
 	"Glass_": "Glass_01_A",	# no albedo texture (match Glass?)
@@ -20,10 +21,8 @@ const FILE_MAP = {
 	"SM_Env_Planet_Plane_01": "Planet_Material_01",
 	"SM_Env_Planet_Plane_02": "Planet_Material_02",
 	"SM_Env_Road": "PolygonSciFi_Road_01", # uses custom shader
-	# TODO skipping FX files
 	"Fire_01_FX": "Polygon_Scifi_FX", # uses custom shader
-	# bunch more
-	# TODO skipping FX files
+	# TODO: skipping the other FX files
 #	"SM_Prop_Hologram_Bottle_": "PolygonScifi_Hologram_Base",	# uses custom shader - matching issue?
 #	"SM_Prop_Bottle_": "PolygonScifi_Hologram_Outline",	# no albedo texture - matching issue?
 #	"SM_Prop_Hologram_": "PolygonScifi_Hologram_Base",	# uses custom shader - matching issue?
@@ -55,16 +54,17 @@ func process() -> Error:
 	print("Using temp dir: " + temp_dir_path)
 
 	# copy text textures to the project first because we reference them in the post import of the fbx files
+	# TODO: we're just copying them directly to export_subdir and generating .import files before forcing a scan
+	# we should copy to temp_dir first. generate, then copy to export_subdir like we do for everything else
 	print("Copying files from " + selected_folder_path.path_join("Textures") + " to " + export_subdir.path_join("Textures"))
 	err = FileUtils.copy_directory_recursive(selected_folder_path.path_join("Textures"), export_subdir.path_join("Textures"))
 	if not err == OK:
 		push_error("Error copying: " + error_string(err))
 		return err
 
-	# TODO: test generating .import files for the textures so they don't re-import when we fix the meshes
-	# this may fix it in the post import script too? i'd rather have it done there
-	print("Configuring texture imports for 3D...")
+	# generate .import files for the textures so they don't re-import when we fix the meshes
 	var texture_files: Array[String] = FileUtils.list_files_recursive(export_subdir.path_join("Textures"))
+	print("Adding .import files for " + str(texture_files.size()) + " PNG files in " + export_subdir.path_join("Textures"))
 	for tex_file in texture_files:
 		if not tex_file.ends_with(".png"):
 			continue
@@ -80,6 +80,9 @@ func process() -> Error:
 
 	print("Copying files from " + selected_folder_path + " to " + temp_dir_path)
 	err = FileUtils.copy_directory_recursive(selected_folder_path.path_join("FBX"), temp_dir_path.path_join("FBX"))
+	if not err == OK:
+		push_error("Error copying files: " + error_string(err))
+		return err
 
 	# textures are in the project, time for the fbx files
 	var imports_to_create: Array[String] = FileUtils.list_files_recursive(temp_dir_path).filter(func(f): return f.ends_with(".fbx"))
@@ -104,6 +107,10 @@ func process() -> Error:
 
 	# delete Characters.fbx (we created separate char files so we don't need it)
 	err = DirAccess.remove_absolute(export_subdir.path_join("FBX").path_join("Characters.fbx"))
+	if not err == OK:
+		push_error("Error deleting: " + error_string(err))
+		return err
+
 	err = DirAccess.remove_absolute(temp_dir_path.path_join("FBX").path_join("Characters.fbx"))
 	if not err == OK:
 		push_error("Error deleting: " + error_string(err))
@@ -278,9 +285,7 @@ func fix_mesh_materials(mesh: MeshInstance3D) -> void:
 	mesh.mesh = mesh.mesh.duplicate(true)
 
 	for surface_idx in range(mesh.mesh.get_surface_count()):
-#		var mat: Material = mesh.mesh.surface_get_material(surface_idx)
-#		print("Processing material for mesh:", mesh.name, "Surface:", surface_idx, "Current material:", mat)
-
+#		print("Processing material for mesh:", mesh.name, "Surface:", surface_idx)
 		var new_mat = StandardMaterial3D.new()
 		new_mat.albedo_color = Color(1,1,1)
 
@@ -304,11 +309,11 @@ func generate_texture_import_file_for_3d(texture_path: String) -> Error:
 	var config = ConfigFile.new()
 
 	config.set_value("deps", "source_file", texture_path)
-#	config.set_value("", "source_file", texture_path)
 
 	# specify the differences betewen the default .import Godot generates and after its set on a 3d object
 	config.set_value("params", "compress/mode", 2)
 	config.set_value("params", "mipmaps/generate", true)
 	config.set_value("params", "detect_3d/compress_to", 0)
+	# importer is in [remap] unlike the fbx .import, we don't need to specify
 
 	return config.save(texture_path + ".import")

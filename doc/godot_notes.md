@@ -10,7 +10,7 @@ The below notes are for my initial import > update .import > reimport approach. 
 research and testing I found it much easier to process the files with a combination of:
 
 - Pre-processing of files via script in this addon (as needed)
-- Generating partial `.import` files _before_ copying to the file system
+- Generating partial `.import` files _before_ import/copying to the file system
 - Post Import scripts that run after Godot imports the files
 
 This approach is less error prone and a lot faster. See the `import_generators` and `post_import_scripts` directories
