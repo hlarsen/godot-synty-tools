@@ -159,7 +159,7 @@ func _on_run_button_press() -> void:
 	exit_button.visible = true
 	run_button.disabled = true
 	select_folder_button.disabled = true
-	status_label.text = "Processing started, see the Output tab for logs.\nMaterial errors on import are expected at this point."
+	status_label.text = "Processing started, see the Output tab for logs.\nMaterial errors on import are expected."
 	status_label.visible = true
 	selected_folder_label.visible = false
 

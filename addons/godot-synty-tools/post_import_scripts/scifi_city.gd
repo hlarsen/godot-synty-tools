@@ -1,35 +1,10 @@
 @tool
 extends EditorScenePostImport
 
-const DEBUG_LOGGING: bool = true
-# Overrides for the default
-# const FILE_MAP = preload("res://addons/godot-synty-tools/file_map.gd").FILE_MAP
-const FILE_MAP = {
-	"SM_Bld_Background_": "PolygonScifi_Background_Building_Emissive", # no albedo texture
-	"_Glass": "Glass_01_A",	# no albedo texture (match Glass?)
-	"Glass_": "Glass_01_A",	# no albedo texture (match Glass?)
-	"SM_HologramPods_": "PolygonScifi_Hologram_Outline", # no albedo texture
-	"SkyDome": "SimpleSky", # uses custom shader
-	"SM_Env_Graffiti_": "PolygonSciFi_Billboards",
-	"SM_Env_Planet_Plane_01": "Planet_Material_01",
-	"SM_Env_Planet_Plane_02": "Planet_Material_02",
-	"SM_Env_Road": "Road", # uses custom shader
-	# TODO skipping FX files
-	"Fire_01_FX": "Polygon_Scifi_FX", # uses custom shader
-	# bunch more
-	# TODO skipping FX files
-	"SM_Prop_Hologram_Bottle_": "PolygonScifi_Hologram_Base",	# uses custom shader - matching issue?
-	"SM_Prop_Bottle_": "PolygonScifi_Hologram_Outline",	# no albedo texture - matching issue?
-	"SM_Prop_Hologram_": "PolygonScifi_Hologram_Base",	# uses custom shader - matching issue?
-	"SM_Prop_LargeSign_": "PolygonScifi_Hologram_Outline",	# no albedo texture - matching issue?
-	"SM_Prop_Jar": "Glass_01_Jar", # no albedo texture (match Jar?)
-	"SM_Prop_Posters_": "PolygonSciFi_Billboards",
-	"SM_Sign_Ad_": "Signs",
-	"SM_Sign_Billboard_Large_": "PolygonSciFi_Billboards",
-	"SM_Sign_Neon_": "PolygonScifi_NeonSigns", # uses custom shader
-	"SM_Sign_Neon_Flat_": "PolygonScifi_NeonSigns", # uses custom shader
-	
-}
+class_name ScifiCityPostImport
+
+const DEBUG_LOGGING: bool = false
+const GST_POLYGON_MASC_ANIM_LIB: String = "res://godot-synty-tools-output/base_locomotion/Polygon-Masculine.tres"
 
 # This install script may be useful on its own, so far we're not doing any pre-processing like with Base Locomotion
 func _post_import(scene: Node) -> Object:
@@ -75,15 +50,11 @@ func clean_scene_name(name: String) -> String:
 func process_scene(scene: Node, src_file: String) -> Node:
 	var src_base_fn: String = src_file.get_file()
 
-	if src_base_fn == "Characters.fbx":
-		return scene
-	elif src_base_fn.begins_with("Character_"):
-		fix_scene_materials(scene)
+	if src_base_fn.begins_with("Character_"):
 		scene = process_character(scene, src_file)
 	elif src_base_fn.begins_with("SM_"):
-		fix_scene_materials(scene)
-		# NOTE: set up the export object however you prefer
 		scene = process_sm_staticbody3d_root(scene, src_file)
+		# NOTE: alternate output scene setup
 #		scene = _process_sm_meshinstance3d_root(scene, src_file)
 	else:
 		print("Not modifying unhandled file: " + src_file)
@@ -101,8 +72,6 @@ func process_sm_staticbody3d_root(scene: Node, src_file: String) -> Node:
 		if DEBUG_LOGGING:
 			print("Child: ", child.name, " (", child.get_class(), ")")
 		if child is MeshInstance3D:
-			# TODO: need to handle if this mesh has decsendants (SM_Wep syringe)
-			# TODO: pull off the textures to get rid of the import errors? fix paths here?
 			scene.remove_child(child)
 			child.set_owner(null)
 			body.add_child(child)
@@ -153,7 +122,7 @@ func generate_collision(mesh: MeshInstance3D) -> CollisionShape3D:
 	return shape
 
 func process_character(scene: Node, char_file_path: String) -> Node:
-#	print("Processing fixed character " + scene.name + " at " + char_file_path)
+	print("Processing fixed character " + scene.name + " at " + char_file_path)
 	var char_name: String = scene.name.replace(".fbx", "")
 
 	# delete extra meshes	
@@ -172,6 +141,7 @@ func process_character(scene: Node, char_file_path: String) -> Node:
 			child.queue_free()
 
 	# collision
+#	print("Adding collision")
 	var char_skeleton: Skeleton3D = scene.get_node("Skeleton3D")
 	# TODO: testing shapes
 	var collision: CollisionShape3D = make_collision_for_skel(char_skeleton)
@@ -180,23 +150,22 @@ func process_character(scene: Node, char_file_path: String) -> Node:
 		scene.add_child(collision)
 		collision.set_owner(scene)
 
-#	# animation
+	# animation
+#	print("Adding anim player")
 	var anim_player = AnimationPlayer.new()
 	anim_player.name = "AnimationPlayer"
 	scene.add_child(anim_player)
 	anim_player.set_owner(scene)
 	anim_player.root_node = anim_player.get_path_to(scene)
-	# TODO: preload anim lib (create in preload?)
-#	var anim_lib: AnimationLibrary = preload("res://path_to_library.tres")
-#	anim_player.animation_library = anim_lib
+	# preload anim lib if it exists in our output dir
+	if FileAccess.file_exists(GST_POLYGON_MASC_ANIM_LIB):
+		var anim_lib: AnimationLibrary = load(GST_POLYGON_MASC_ANIM_LIB)
+		anim_player.add_animation_library("Polygon Masculine", anim_lib)
 
-	var anim_tree = AnimationTree.new()
-	anim_tree.name = "AnimationTree"
-#	# TODO: need to set/maybe prep this as well, idle loop/walk/run/jump
-##	anim_player.tree_root = AnimationNodeStateMachine.new()
-	scene.add_child(anim_tree)
-	anim_tree.set_owner(scene)
-	anim_tree.anim_player = anim_tree.get_path_to(anim_player)
+#	print("Adding anim tree")
+#	add_animation_tree(scene, anim_player)
+
+#	print("Adding sound")
 
 	return scene
 
@@ -206,8 +175,8 @@ func make_collision_for_skel(skel: Skeleton3D) -> CollisionShape3D:
 	var min_y = INF
 	var max_y = -INF
 	for bone_idx in range(skel.get_bone_count()):
-		var bone_transform = skel.get_bone_global_pose(bone_idx)
-		var y = bone_transform.origin.y
+		var bone_transform: Transform3D = skel.get_bone_global_pose(bone_idx)
+		var y: float = bone_transform.origin.y
 		if y < min_y:
 			min_y = y
 		if y > max_y:
@@ -239,7 +208,7 @@ func make_collision_for_mesh(mesh_instance: MeshInstance3D) -> CollisionShape3D:
 
 	# Get the mesh’s overall bounds
 	var aabb: AABB = mesh_instance.mesh.get_aabb()
-	var height = aabb.size.y
+	var height: float = aabb.size.y
 	var radius = max(aabb.size.x, aabb.size.z) * 0.25  # approximate shoulder width
 
 	# Create capsule shape
@@ -257,43 +226,38 @@ func make_collision_for_mesh(mesh_instance: MeshInstance3D) -> CollisionShape3D:
 
 	return collision
 
-func fix_scene_materials(root: Node) -> void:
-	if not root:
-		return
+# TODO: testing
+func add_animation_tree(scene: Node, anim_player: AnimationPlayer) -> void:
+	var anim_tree := AnimationTree.new()
+	anim_tree.name = "AnimationTree"
+	scene.add_child(anim_tree)
+	anim_tree.owner = scene
+	anim_tree.anim_player = anim_tree.get_path_to(anim_player)
 
-	if root is MeshInstance3D:
-		print("Fixing mesh materials for: " + root.name)
-		fix_mesh_materials(root)
+	# Build the state machine
+	var state_machine := AnimationNodeStateMachine.new()
 
-	# recursively process children
-	for child in root.get_children():
-		if child is Node:
-			fix_scene_materials(child)
+	# Add the machine as the root of the tree
+	anim_tree.tree_root = state_machine
 
+	# Create state nodes for each animation
+	for state_name in ["idle", "walk", "run", "jump"]:
+		if anim_player.has_animation(state_name):
+			var node := AnimationNodeAnimation.new()
+			node.animation = state_name
+			state_machine.add_node(state_name, node)
+		else:
+			print("Animation not found:", state_name)
 
-func fix_mesh_materials(mesh: MeshInstance3D) -> void:
-	if not mesh or not mesh.mesh:
-		print("No mesh or mesh.mesh found")
-		return
+	# Add transitions (each one needs its own transition object)
+	var t1 := AnimationNodeStateMachineTransition.new()
+	state_machine.add_transition("idle", "walk", t1)
 
-	for surface_idx in range(mesh.mesh.get_surface_count()):
-		var mat: Material = mesh.mesh.surface_get_material(surface_idx)
-		print("Processing material for mesh:", mesh.name, "Surface:", surface_idx, "Current material:", mat)
+	var t2 := AnimationNodeStateMachineTransition.new()
+	state_machine.add_transition("walk", "run", t2)
 
-		var new_mat = StandardMaterial3D.new()
-		new_mat.albedo_color = Color(1,1,1)
+	var t3 := AnimationNodeStateMachineTransition.new()
+	state_machine.add_transition("run", "idle", t3)
 
-		var file_to_use: String = "PolygonScifi_01_A.png"
-		for key in FILE_MAP.keys():
-			if mesh.name.begins_with(key):
-				file_to_use = FILE_MAP[key] + ".png"
-				break
-
-		var tex_path: String = "res://godot-synty-tools-output/scifi_city/Textures/" + file_to_use
-		if not FileAccess.file_exists(tex_path):
-			print("Texture not found, using default fallback:", tex_path)
-
-		new_mat.albedo_texture = load(tex_path)
-		mesh.mesh.surface_set_material(surface_idx, new_mat)
-
-		print("Assigned texture:", tex_path)
+	state_machine.set_start_node("idle")
+	anim_tree.active = true

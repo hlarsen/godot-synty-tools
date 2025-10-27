@@ -1,6 +1,8 @@
 @tool
 extends EditorScenePostImport
 
+class_name BaseLocomotionPostImport
+
 const DEBUG_LOGGING: bool = false
 
 # This Post Install script is probably not too useful on its own, it just creates animation .resources files
