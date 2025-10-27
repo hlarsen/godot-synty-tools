@@ -44,4 +44,5 @@ meshes, bones, materials, and other stuff like that.
 
 ## License
 
-MIT, but if your commercial project does well please consider making a donation =)
+MIT, but if your commercial project does well please consider making a donation or gifting some packs, which will
+be added to the addon =)
