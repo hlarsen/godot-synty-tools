@@ -5,60 +5,41 @@ Godot and Blender and wanting to learn more about the files, how they're structu
 
 No assets are included in this repo.
 
-## Assets and Goals
-
-I've been working with some Synty asset packs I have licenses for, as well as some Mixamo models and animations. Besides
-getting more familiar with the file formats in general, another initial goal was to see if I could mix Mixamo and Synty
-characters/animations.
-
-I have some Blender scripts in another repo that will clean up the FBX files, fixing materials and a few other niceties.
-
-### Features
-
-#### Base Locomotion
-
-The Synty Base Locomotion source files do not have a proper T-Pose Rest Pose, so adding them to characters that do have
-one is an issue. Pass in your `Animations/Polygon` folder and the addon will output fixed Animation files as well as
-AnimationLibraries for the main folders.
-
-To use the output Animations or Animation Libraries make sure your character's Skeleton3D is properly mapped (very
-likely via a bone map) to Godot's default `SkeletonProfileHumanoid`, and that your Skeleton3D node is named `Skeleton3D`.
-
-Just add to an AnimationPlayer and you should be good to go.
-
-#### Sci-Fi City
-
-This is a work in progress, but at this point I believe it's fairly robust:
-
-- Splits Characters.fbx out into individual files
-- Cleans up the object heirarchy
-- Fixes default materials
-
-If you've already run the addon against the Base Locomotion pack it will apply the Polygon Masculine library to the
-characters automatically.
-
-### Feedback and Future Work
-
-The bone map versions in `bone_maps` should match the asset pack versions. The bone maps are an indication of what
-packs I have licenses for - if anyone wants to say thanks by gifting me licenses for other packs I can add those as
-well ;)
-
-If there are any issues or suggestions, please let me know - you can reach me at hlarsen on the Synty discord.
-
 ## Usage
 
-Install the addon to `addons` as normal and enable it in Project Settings > Plugins. You should now be able to launch
-the addon at `Project Settings > Tools > Godot Synty Tools`.
+Install the addon to `addons` as normal and enable it in `Project > Project Settings > Plugins`. You should now be able
+to launch the addon at `Project > Tools > Godot Synty Tools`.
 
 Make sure the Output tab is selected so you can see the script output.
+
+## Features
+
+For a given pack, the addon scans and processes the FBX files for easier use in Godot.
+
+- `Base Locomotion`: Create animations and animation libraries properly mapped to Godot's SkeletonHumanoid3D
+- `Sci-Fi City`: Split characters into individuals, fix materials, import as cleaned up scenes
+
+See `doc/synty_pack_details.md` for more details and notes.
+
+## Feedback and Future Work
+
+Please reach out to me at `@hlarsen` on the [Synty Discord](https://discord.com/invite/syntystudios) if you:
+
+- want me to prioritize adding a specific pack by gifting me a license
+- have suggestions on the output of this addon (scene hierarchy, etc.)
+- want to talk about custom tooling development for Godot
+
+Please file issues on GitHub for any errors or problems.
 
 ## Notes
 
 I am not a 3D modeler or game developer, so if I'm doing anything obviously wrong please feel free to let me know. I've
-been talking with Claude and ChatGPT to help learn the 3D space, but there shouldn't be any blocks of weird opaque
-LLM-generated code anywhere.
+been talking with Claude and ChatGPT to help learn the 3D space, but honestly pretty much all the code it produced was
+rewritten because it was not great. I'm pretty anti-LLM, but having an "interactive" docs search works well with Godot
+because the docs are pretty good and contain a ton of _concepts_, but you can also double-check any suspected
+hallucinations in the source!
 
-My repo of [Blender Scripts](https://github.com/hlarsen/game-asset-blender-scripts) may be useful, it has code around
+My repo of [Blender Scripts](https://github.com/hlarsen/game-asset-blender-scripts) may be useful - it has code around
 meshes, bones, materials, and other stuff like that.
 
 ## License
