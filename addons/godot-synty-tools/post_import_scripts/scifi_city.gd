@@ -4,7 +4,7 @@ extends EditorScenePostImport
 const DEBUG_LOGGING: bool = false
 const GST_POLYGON_MASC_ANIM_LIB: String = "res://godot-synty-tools-output/base_locomotion/Polygon-Masculine.tres"
 
-var animation_tree_builder = preload("res://addons/godot-synty-tools/utils/animation_tree_builder.gd")
+var animation_tree_builder = preload("res://addons/godot-synty-tools/utils/base_locomotion_animation_tree_builder.gd")
 var character_controller = preload("res://addons/godot-synty-tools/misc/character_controller.gd")
 
 # This install script may be useful on its own, so far we're not doing any pre-processing like with Base Locomotion

@@ -2,24 +2,18 @@
 extends EditorScenePostImport
 
 const DEBUG_LOGGING: bool = false
-const LOOPED_ANIMS = [
+const LOOPED_ANIMS: Array[Variant] = [
+	# standing
 	"Idle_Standing",
-	"Walk_FwdStrafeF",
-	"Walk_FwdStrafeR",
-	"Walk_BckStrafeB",
-	"Walk_FwdStrafeL",
-	"Walk_FwdStrafeFR",
-	"Walk_BckStrafeBR",
-	"Walk_BckStrafeBL",
-	"Walk_FwdStrafeFL",
-	"Run_FwdStrafeF",
-	"Run_FwdStrafeR",
-	"Run_BckStrafeB",
-	"Run_FwdStrafeL",
-	"Run_FwdStrafeFR",
-	"Run_BckStrafeBR",
-	"Run_BckStrafeBL",
-	"Run_FwdStrafeFL",
+	"Walk_BckStrafe",
+	"Walk_FwdStrafe",
+	"Run_BckStrafe",
+	"Run_FwdStrafe",
+	# crouching
+	"Idle_Crouching",
+	"Shuffle_Crouching",
+	"Crouch_FwdStrafe",
+	"Crouch_FwdStrafe",
 ]
 
 # This Post Install script is probably not too useful on its own, it just creates animation .resources files
@@ -81,7 +75,7 @@ func create_animation_resource_file(scene: Node, src_file: String) -> Error:
 					for anim_check in LOOPED_ANIMS:
 						if anim_check in anim_name:
 							anim.loop = true
-							print("Looping animation: " + anim_name)
+#							print("Looping animation: " + anim_name)
 
 					return ResourceSaver.save(anim, src_file.replace(".fbx", ".res"))
 		else:

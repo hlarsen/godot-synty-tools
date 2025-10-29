@@ -329,7 +329,11 @@ func add_animations_recursive(current_path: String, lib: AnimationLibrary, relat
 			new_prefix += file_name
 			add_animations_recursive(file_path, lib, new_prefix)
 		elif file_name.ends_with(".res"):
-			if ("RootMotion" in file_path) or "_To" in file_path:
+			if "RootMotion" in file_path:
+				continue
+
+			# transition animations (we're currently letting Godot blend between animations)
+			if "_To" in file_path:
 				continue
 
 			var anim: Resource = ResourceLoader.load(file_path)

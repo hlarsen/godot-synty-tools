@@ -4,6 +4,7 @@ extends CharacterBody3D
 @export var acceleration: float = 4.0
 @export var jump_velocity: float = 8.0
 @export var face_direction_of_travel: bool = false
+@export var is_crouching: bool = false
 
 @onready var anim_tree: AnimationTree = $AnimationTree
 @onready var model: Skeleton3D = $Skeleton3D
@@ -42,15 +43,22 @@ func _physics_process(delta: float) -> void:
 		return
 
 	# update animation blend position
+	var blend_pos: Vector2 = Vector2.ZERO
 	if face_direction_of_travel:
 		var local_velocity: Vector3 = model.global_transform.basis.inverse() * velocity
-		var blend_pos: Vector2 = Vector2(local_velocity.x, local_velocity.z) / speed
-		anim_tree.set("parameters/StandingBlend/blend_position", blend_pos)
+		blend_pos = Vector2(local_velocity.x, local_velocity.z) / speed
 
 		if dir.length() > 0.01:
 			model.rotation.y = lerp_angle(model.rotation.y, atan2(dir.x, dir.z), 12.0 * delta)
 	else:
-		var blend_pos: Vector2 = Vector2(velocity.x, -velocity.z) / speed
+		blend_pos = Vector2(velocity.x, -velocity.z) / speed
+
+	var playback = anim_tree.get("parameters/playback")
+	if is_crouching:
+		playback.travel("CrouchingBlend")
+		anim_tree.set("parameters/CrouchingBlend/blend_position", blend_pos)
+	else:
+		playback.travel("StandingBlend")
 		anim_tree.set("parameters/StandingBlend/blend_position", blend_pos)
 
 	move_and_slide()
