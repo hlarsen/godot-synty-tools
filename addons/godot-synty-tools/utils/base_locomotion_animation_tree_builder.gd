@@ -14,16 +14,13 @@ static func add_animation_tree(scene: Node, anim_player: AnimationPlayer) -> voi
 	var state_machine: AnimationNodeStateMachine = AnimationNodeStateMachine.new()
 	anim_tree.tree_root = state_machine
 
-	# NOTE: the 3rd param for add_note() is supposed to set the position in the editor, like set_note_postion
-	# neither one of them seem to work, both of our blends are in the top left on top of each other in the editor
 	var standing_blend: AnimationNodeBlendSpace2D = build_standing_blend(scene, anim_player)
-	state_machine.add_node("StandingBlend", standing_blend, Vector2(200, 200))
-#	state_machine.set_node_position("StandingBlend", Vector2(800, 800))
+	# NOTE: project restart needed to see changes to position in editor
+	state_machine.add_node("StandingBlend", standing_blend, Vector2(400, 100))
 	print("StandingBlend setup complete with %d blend points" % standing_blend.get_blend_point_count())
 
 	var crouching_blend: AnimationNodeBlendSpace2D = build_crouching_blend(anim_player,ANIM_LIB_PREFIX)
-	state_machine.add_node("CrouchingBlend", crouching_blend, Vector2(400, 400))
-#	state_machine.set_node_position("CrouchingBlend", Vector2(1200, 1200))
+	state_machine.add_node("CrouchingBlend", crouching_blend, Vector2(400, 300))
 	print("CrouchingBlend setup complete with %d blend points" % crouching_blend.get_blend_point_count())
 
 	# transition: start to standing blend
@@ -33,11 +30,13 @@ static func add_animation_tree(scene: Node, anim_player: AnimationPlayer) -> voi
 	# transition: standing to crouching
 	var stand_to_crouch: AnimationNodeStateMachineTransition = AnimationNodeStateMachineTransition.new()
 	stand_to_crouch.switch_mode = AnimationNodeStateMachineTransition.SWITCH_MODE_IMMEDIATE
+	stand_to_crouch.xfade_time = 0.2
 	state_machine.add_transition("StandingBlend", "CrouchingBlend", stand_to_crouch)
 
 	# transition: crouching to standing
 	var crouch_to_stand: AnimationNodeStateMachineTransition = AnimationNodeStateMachineTransition.new()
 	crouch_to_stand.switch_mode = AnimationNodeStateMachineTransition.SWITCH_MODE_IMMEDIATE
+	crouch_to_stand.xfade_time = 0.2
 	state_machine.add_transition("CrouchingBlend", "StandingBlend", crouch_to_stand)
 
 	anim_tree.active = true
