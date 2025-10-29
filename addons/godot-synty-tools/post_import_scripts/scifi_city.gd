@@ -4,6 +4,9 @@ extends EditorScenePostImport
 const DEBUG_LOGGING: bool = false
 const GST_POLYGON_MASC_ANIM_LIB: String = "res://godot-synty-tools-output/base_locomotion/Polygon-Masculine.tres"
 
+var animation_tree_builder = preload("res://addons/godot-synty-tools/utils/animation_tree_builder.gd")
+var character_controller = preload("res://addons/godot-synty-tools/misc/character_controller.gd")
+
 # This install script may be useful on its own, so far we're not doing any pre-processing like with Base Locomotion
 func _post_import(scene: Node) -> Object:
 	var src_file: String = get_source_file()
@@ -97,7 +100,10 @@ func process_character(scene: Node, char_file_path: String) -> Node:
 	print("Processing fixed character " + scene.name + " at " + char_file_path)
 	var char_name: String = scene.name.replace(".fbx", "")
 
-	print("Deleting extra meshes")	
+#	print("Adding character controller")
+	scene.set_script(character_controller)
+
+#	print("Deleting extra meshes")	
 	for child in scene.get_children():
 		if child is Skeleton3D:
 			for gchild in child.get_children():
@@ -112,9 +118,12 @@ func process_character(scene: Node, char_file_path: String) -> Node:
 			scene.remove_child(child)
 			child.queue_free()
 
-#	print("Adding collision")
+	# flip skeleton facing to match Godot
 	var char_skeleton: Skeleton3D = scene.get_node("Skeleton3D")
+	char_skeleton.rotation.y = deg_to_rad(180)
+
 	# TODO: collider shapes?
+#	print("Adding collision")
 	var collision: CollisionShape3D = generate_char_collsion_from_skel(char_skeleton)
 #	var collision: CollisionShape3D = make_collision_for_mesh(char_skeleton.get_node(char_name))
 	if collision:
@@ -135,7 +144,7 @@ func process_character(scene: Node, char_file_path: String) -> Node:
 			push_error("Could not add animation library to animation player")
 
 #	print("Adding anim tree")
-#	add_animation_tree(scene, anim_player)
+	animation_tree_builder.add_animation_tree(scene, anim_player)
 
 #	print("Adding sound")
 
@@ -233,38 +242,3 @@ func generate_char_collision_from_mesh(mesh_instance: MeshInstance3D) -> Collisi
 	collision.position = aabb.position + (aabb.size * 0.5)
 
 	return collision
-
-# TODO: test
-func add_animation_tree(scene: Node, anim_player: AnimationPlayer) -> void:
-	var anim_tree := AnimationTree.new()
-	anim_tree.name = "AnimationTree"
-	scene.add_child(anim_tree)
-	anim_tree.owner = scene
-	anim_tree.anim_player = anim_tree.get_path_to(anim_player)
-
-#	return
-
-	var state_machine := AnimationNodeStateMachine.new()
-	anim_tree.tree_root = state_machine
-
-	# create state nodes for each animation
-	for state_name in ["idle", "walk", "run", "jump"]:
-		if anim_player.has_animation(state_name):
-			var node := AnimationNodeAnimation.new()
-			node.animation = state_name
-			state_machine.add_node(state_name, node)
-		else:
-			print("Animation not found:", state_name)
-
-	# add transitions (each one needs its own transition object)
-	var t1 := AnimationNodeStateMachineTransition.new()
-	state_machine.add_transition("idle", "walk", t1)
-
-	var t2 := AnimationNodeStateMachineTransition.new()
-	state_machine.add_transition("walk", "run", t2)
-
-	var t3 := AnimationNodeStateMachineTransition.new()
-	state_machine.add_transition("run", "idle", t3)
-
-	state_machine.set_start_node("idle")
-	anim_tree.active = true

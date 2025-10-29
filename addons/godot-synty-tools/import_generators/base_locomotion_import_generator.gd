@@ -51,9 +51,9 @@ func process() -> Error:
 	var temp_tpose_path_polygon: String = temp_dir_path.path_join(ANIM_TPOSE_PATH_POLYGON)
 	var temp_tpose_path_sidekick: String = temp_dir_path.path_join(ANIM_TPOSE_PATH_SIDEKICK)
 	var export_subdir_tpose_path_polygon: String = temp_dir_path.path_join(ANIM_TPOSE_PATH_POLYGON)
-	var export_subdir_path_sidekick: String = temp_dir_path.path_join(ANIM_TPOSE_PATH_SIDEKICK)
+	var export_subdir_tpose_path_sidekick: String = temp_dir_path.path_join(ANIM_TPOSE_PATH_SIDEKICK)
 	generate_tpose_anim_import_file(temp_tpose_path_polygon, export_subdir_tpose_path_polygon)
-	generate_tpose_anim_import_file(temp_tpose_path_sidekick, export_subdir_path_sidekick)
+	generate_tpose_anim_import_file(temp_tpose_path_sidekick, export_subdir_tpose_path_sidekick)
 
 	print("Copy and import fixed T-Pose animations")
 	var fixed_tpose_files: Array[String] = [temp_tpose_path_polygon, temp_tpose_path_sidekick, temp_tpose_path_polygon + ".import", temp_tpose_path_sidekick + ".import"] 
@@ -77,7 +77,7 @@ func process() -> Error:
 		push_error("Could not create fixed T-Pose resources")
 		return FAILED
 
-	print("Creating animation libraries")
+	print("Creating T-Pose animation libraries")
 	var anim_lib_res_path_polygon: String = create_tpose_animation_library(tpose_res_path_polygon, export_subdir_tpose_fixed)
 	var anim_lib_res_path_sidekick: String = create_tpose_animation_library(tpose_res_path_sidekick, export_subdir_tpose_fixed)
 	if not (anim_lib_res_path_polygon or anim_lib_res_path_sidekick):
@@ -189,6 +189,18 @@ func generate_animation_fbx_import_file(src_file: String, tmp_file_path: String,
 		}
 	}
 
+	# the additive animations are in a t-pose so i think the fix would break them (but they still need a bone map)
+	if "/Additive/" in src_file:
+		subresources_dict = {
+			"nodes": {
+				"PATH:Skeleton3D": {
+					"retarget/bone_map": bone_map,
+					"retarget/bone_renamer/unique_node/make_unique": false,
+					"retarget/bone_renamer/unique_node/skeleton_name": "Skeleton3D",
+				}
+			}
+	}
+
 	config.set_value("params", "_subresources", subresources_dict)
 
 	return config.save(src_file + ".import")
@@ -241,36 +253,56 @@ func create_animation_libraries(target_dir: String, export_dir: String) -> Error
 		push_error("Can't open target directory: " + target_dir)
 		return FAILED
 
-	var base_prefix := target_dir.get_file() # e.g., "Base"
-
 	dir.include_navigational = false
 	dir.include_hidden = false
 	dir.list_dir_begin()
 
-	var folder_name := dir.get_next()
-	while folder_name != "":
+	# Detect base type (Polygon or Sidekick)
+	var base_name := target_dir.get_file()
+	if base_name == "":
+		base_name = target_dir.get_base_dir().get_file()
+	if base_name == "":
+		base_name = "Unknown"
+
+	var masc_lib: AnimationLibrary = null
+	var fem_lib: AnimationLibrary = null
+
+	while true:
+		var folder_name := dir.get_next()
+		if folder_name == "":
+			break
 		if folder_name in [".", "..", TPOSE_WORKING_DIR]:
-			folder_name = dir.get_next()
 			continue
 
-		if dir.current_is_dir():
-			var top_level_path := target_dir.path_join(folder_name)
-			var lib := AnimationLibrary.new()
-			var lib_name := "%s-%s" % [base_prefix, folder_name]
-			lib.set_name(lib_name)
+		var top_level_path := target_dir.path_join(folder_name)
+		if not dir.current_is_dir():
+			continue
 
-			# Add all animations under this top-level folder
-			add_animations_recursive(top_level_path, lib, "")
+		if "Masculine" in folder_name:
+			masc_lib = AnimationLibrary.new()
+			masc_lib.set_name("%s-Masculine" % base_name)
+			add_animations_recursive(top_level_path, masc_lib, "")
+		elif "Feminine" in folder_name:
+			fem_lib = AnimationLibrary.new()
+			fem_lib.set_name("%s-Feminine" % base_name)
+			add_animations_recursive(top_level_path, fem_lib, "")
+		elif "Neutral" in folder_name:
+			if masc_lib:
+				add_animations_recursive(top_level_path, masc_lib, "")
+			if fem_lib:
+				add_animations_recursive(top_level_path, fem_lib, "")
 
-			if lib.get_animation_list().size() > 0:
-				var lib_path := export_dir.path_join(lib_name + ".tres")
-				var result := ResourceSaver.save(lib, lib_path)
-				if result != OK:
-					push_warning("Failed saving animation library: " + lib_path)
-		folder_name = dir.get_next()
+	# Save libraries if they exist
+	if masc_lib and masc_lib.get_animation_list().size() > 0:
+		var masc_path := export_dir.path_join(masc_lib.get_name() + ".tres")
+		ResourceSaver.save(masc_lib, masc_path)
+	if fem_lib and fem_lib.get_animation_list().size() > 0:
+		var fem_path := export_dir.path_join(fem_lib.get_name() + ".tres")
+		ResourceSaver.save(fem_lib, fem_path)
+
 	dir.list_dir_end()
-
 	return OK
+
 
 func add_animations_recursive(current_path: String, lib: AnimationLibrary, relative_prefix: String) -> void:
 	var dir: DirAccess = DirAccess.open(current_path)
@@ -281,46 +313,88 @@ func add_animations_recursive(current_path: String, lib: AnimationLibrary, relat
 	dir.include_navigational = false
 	dir.include_hidden = false
 	dir.list_dir_begin()
-	var file_name: String = dir.get_next()
-	while file_name != "":
+
+	while true:
+		var file_name := dir.get_next()
+		if file_name == "":
+			break
 		if file_name in [".", ".."]:
-			file_name = dir.get_next()
 			continue
 
-		var file_path: String = current_path.path_join(file_name)
+		var file_path := current_path.path_join(file_name)
 		if dir.current_is_dir():
-			var new_prefix: String = relative_prefix
+			var new_prefix := relative_prefix
 			if new_prefix != "":
 				new_prefix += " - "
 			new_prefix += file_name
 			add_animations_recursive(file_path, lib, new_prefix)
 		elif file_name.ends_with(".res"):
+			if ("RootMotion" in file_path) or "_To" in file_path:
+				continue
+
 			var anim: Resource = ResourceLoader.load(file_path)
 			if anim:
-				var anim_name: String = relative_prefix
+				var anim_name := relative_prefix
 				if anim_name != "":
 					anim_name += " - "
 				anim_name += file_name.get_basename()
 
-				# clean up the names a bit
-				var polygon_replacements: Dictionary[String, String] = {
-					" - A_": " - ",
-					"_Femn": "",
-					"_Masc": "",
-					"_Neut": "",
-					"_": ""
-				}
-
-				var sidekick_replacements: Dictionary[String, String] = {
-					"MODBL": "",
-				}
-
-				for old in polygon_replacements.keys():
-					anim_name = anim_name.replace(old, polygon_replacements[old])
-
-				for old in sidekick_replacements.keys():
-					anim_name = anim_name.replace(old, sidekick_replacements[old])
-
+				# cleanup
+#				anim_name = file_name.get_basename()
+				anim_name = clean_animation_name(file_name)
 				lib.add_animation(anim_name, anim)
-		file_name = dir.get_next()
+
 	dir.list_dir_end()
+
+func clean_animation_name(final: String) -> String:
+	var fix = {
+#		"90L_": "_90 Left_",
+#		"90R_": "_90 Right_",
+#		"180L_": "_180 Left_",
+#		"180R_": "_180 Right_",
+#		"25F_": "_25 Forward_",
+#		"LFoot_": "_Left Foot_",
+#		"RFoot_": "_Right Foot_",
+#	
+#		"feFL_": "fe Forward Left_",
+#		"feFR_": "fe Forward Right_",
+#		"feBL_": "fe Back Left_",
+#		"feBR_": "fe Back Right_",
+#		"feF_": "fe Forward_",
+#		"feB_": "fe Backward_",
+#		"feL_": "fe Left_",
+#		"feR_": "fe Right_",
+#	
+#		"FwdStrafe": "ForwardStrafe",
+#		"BckStrafe": "BackStrafe",
+#	
+#		"IdleHard": "Idle Hard",
+#		"IdleMedium": "Idle Medium",
+#		"IdleSoft": "Idle Soft",
+#		"_Fall": "_Fall_",
+	
+		"A_": "",
+		"A_MOD_BL_": "",
+		"_Masc": "",
+		"_Femn": "",
+		"_Neut": "",
+		".res": "",
+	}
+
+	for f in fix.keys():
+		final = final.replace(f, fix[f])
+
+	# replace all underscores and multiple spaces with a single space
+#	var regex = RegEx.new()
+#	regex.compile("[_\\s]+")
+#	final = regex.sub(final, " ")
+
+#	# Special cases
+#	if final == "Walk F":
+#		final = "Walk Forward"
+#	elif final == "Run F":
+#		final = "Run Forward"
+#	elif final == "Sprint F":
+#		final = "Sprint Forward"
+
+	return final

@@ -223,6 +223,7 @@ func process_characters(file_src, temp_dir_path, export_subdir, expected_imports
 			return err
 
 		expected_imports.append(save_path.replace(temp_dir_path, export_subdir))
+		break
 		
 	return OK
 
