@@ -4,6 +4,15 @@ class_name BaseLocomotionAnimationTreeBuilder
 # TODO: handle this so it's not hardcoded or figure something else out
 const ANIM_LIB_PREFIX: String = "Polygon Masculine/"
 
+# Helper function to add animation to blend space
+static func add_blend_anim(anim_player: AnimationPlayer, anim_name: String, pos: Vector2, standing_blend) -> void:
+	if anim_player.has_animation(anim_name):
+		var node: AnimationNodeAnimation = AnimationNodeAnimation.new()
+		node.animation = anim_name
+		standing_blend.add_blend_point(node, pos)
+	else:
+		push_warning("Animation not found: %s" % anim_name)
+
 static func add_animation_tree(scene: Node, anim_player: AnimationPlayer) -> void:
 	var anim_tree := AnimationTree.new()
 	anim_tree.name = "AnimationTree"
@@ -14,30 +23,31 @@ static func add_animation_tree(scene: Node, anim_player: AnimationPlayer) -> voi
 	var state_machine: AnimationNodeStateMachine = AnimationNodeStateMachine.new()
 	anim_tree.tree_root = state_machine
 
+	# animation state machine nodes
 	var standing_blend: AnimationNodeBlendSpace2D = build_standing_blend(scene, anim_player)
 	# NOTE: project restart needed to see changes to position in editor
-	state_machine.add_node("StandingBlend", standing_blend, Vector2(400, 100))
+	state_machine.add_node("StandingBlend", standing_blend, Vector2(400, 50))
 	print("StandingBlend setup complete with %d blend points" % standing_blend.get_blend_point_count())
 
 	var crouching_blend: AnimationNodeBlendSpace2D = build_crouching_blend(anim_player,ANIM_LIB_PREFIX)
 	state_machine.add_node("CrouchingBlend", crouching_blend, Vector2(400, 300))
 	print("CrouchingBlend setup complete with %d blend points" % crouching_blend.get_blend_point_count())
 
-	# transition: start to standing blend
+	# transitions
 	var start_transition: AnimationNodeStateMachineTransition = AnimationNodeStateMachineTransition.new()
 	state_machine.add_transition("Start", "StandingBlend", start_transition)
 
-	# transition: standing to crouching
 	var stand_to_crouch: AnimationNodeStateMachineTransition = AnimationNodeStateMachineTransition.new()
 	stand_to_crouch.switch_mode = AnimationNodeStateMachineTransition.SWITCH_MODE_IMMEDIATE
 	stand_to_crouch.xfade_time = 0.2
 	state_machine.add_transition("StandingBlend", "CrouchingBlend", stand_to_crouch)
 
-	# transition: crouching to standing
 	var crouch_to_stand: AnimationNodeStateMachineTransition = AnimationNodeStateMachineTransition.new()
 	crouch_to_stand.switch_mode = AnimationNodeStateMachineTransition.SWITCH_MODE_IMMEDIATE
 	crouch_to_stand.xfade_time = 0.2
 	state_machine.add_transition("CrouchingBlend", "StandingBlend", crouch_to_stand)
+
+	build_jump_states(state_machine,ANIM_LIB_PREFIX)
 
 	anim_tree.active = true
 
@@ -105,11 +115,50 @@ static func build_crouching_blend(anim_player: AnimationPlayer,ANIM_LIB_PREFIX: 
 
 	return crouching_blend
 
-# Helper function to add animation to blend space
-static func add_blend_anim(anim_player: AnimationPlayer, anim_name: String, pos: Vector2, standing_blend) -> void:
-	if anim_player.has_animation(anim_name):
-		var node: AnimationNodeAnimation = AnimationNodeAnimation.new()
-		node.animation = anim_name
-		standing_blend.add_blend_point(node, pos)
-	else:
-		push_warning("Animation not found: %s" % anim_name)
+static func build_jump_states(state_machine: AnimationNodeStateMachine, anim_lib_prefix: String) -> void:
+	var jump_node := AnimationNodeAnimation.new()
+	jump_node.animation = anim_lib_prefix + "Jump_Idle"
+	state_machine.add_node("Jump", jump_node)
+	state_machine.set_node_position("Jump", Vector2(700, 150))
+
+	# animation state machine nodes
+	var inair_node := AnimationNodeAnimation.new()
+	inair_node.animation = anim_lib_prefix + "InAir_FallShort"
+	inair_node.loop_mode = Animation.LOOP_LINEAR
+	state_machine.add_node("InAir", inair_node)
+	state_machine.set_node_position("InAir", Vector2(500, 125))
+
+	var land_node := AnimationNodeAnimation.new()
+	land_node.animation = anim_lib_prefix + "Land_IdleSoft"
+	state_machine.add_node("Land", land_node)
+	state_machine.set_node_position("Land", Vector2(500, 225))
+
+	# transitions
+	var standing_to_jump := AnimationNodeStateMachineTransition.new()
+	standing_to_jump.switch_mode = AnimationNodeStateMachineTransition.SWITCH_MODE_IMMEDIATE
+	state_machine.add_transition("StandingBlend", "Jump", standing_to_jump)
+	
+	var crouching_to_jump := AnimationNodeStateMachineTransition.new()
+	crouching_to_jump.switch_mode = AnimationNodeStateMachineTransition.SWITCH_MODE_IMMEDIATE
+	state_machine.add_transition("CrouchingBlend", "Jump", crouching_to_jump)
+
+	var jump_to_inair := AnimationNodeStateMachineTransition.new()
+	jump_to_inair.switch_mode = AnimationNodeStateMachineTransition.SWITCH_MODE_AT_END
+	jump_to_inair.advance_mode = AnimationNodeStateMachineTransition.ADVANCE_MODE_AUTO
+	state_machine.add_transition("Jump", "InAir", jump_to_inair)
+
+	var inair_to_land := AnimationNodeStateMachineTransition.new()
+	inair_to_land.switch_mode = AnimationNodeStateMachineTransition.SWITCH_MODE_IMMEDIATE
+	state_machine.add_transition("InAir", "Land", inair_to_land)
+
+	var land_to_standing := AnimationNodeStateMachineTransition.new()
+	land_to_standing.switch_mode = AnimationNodeStateMachineTransition.SWITCH_MODE_AT_END
+	land_to_standing.advance_mode = AnimationNodeStateMachineTransition.ADVANCE_MODE_AUTO
+	state_machine.add_transition("Land", "StandingBlend", land_to_standing)
+	
+	var land_to_crouching := AnimationNodeStateMachineTransition.new()
+	land_to_crouching.switch_mode = AnimationNodeStateMachineTransition.SWITCH_MODE_AT_END
+	land_to_crouching.advance_mode = AnimationNodeStateMachineTransition.ADVANCE_MODE_AUTO
+	state_machine.add_transition("Land", "CrouchingBlend", land_to_crouching)
+	
+	print("Jump system added: Jump, InAir, Land states")

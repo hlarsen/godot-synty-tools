@@ -14,6 +14,8 @@ const LOOPED_ANIMS: Array[Variant] = [
 	"Shuffle_Crouching",
 	"Crouch_FwdStrafe",
 	"Crouch_FwdStrafe",
+	# other
+	"InAir",
 ]
 
 # This Post Install script is probably not too useful on its own, it just creates animation .resources files
