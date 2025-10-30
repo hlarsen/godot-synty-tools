@@ -280,11 +280,11 @@ func create_animation_libraries(target_dir: String, export_dir: String) -> Error
 
 		if "Masculine" in folder_name:
 			masc_lib = AnimationLibrary.new()
-			masc_lib.set_name("%s-Masculine" % base_name)
+			masc_lib.set_name("%s_Masculine" % base_name)
 			add_animations_recursive(top_level_path, masc_lib, "")
 		elif "Feminine" in folder_name:
 			fem_lib = AnimationLibrary.new()
-			fem_lib.set_name("%s-Feminine" % base_name)
+			fem_lib.set_name("%s_Feminine" % base_name)
 			add_animations_recursive(top_level_path, fem_lib, "")
 		elif "Neutral" in folder_name:
 			if masc_lib:
@@ -336,7 +336,9 @@ func add_animations_recursive(current_path: String, lib: AnimationLibrary, relat
 			if "_To" in file_path:
 				continue
 
-			var anim: Resource = ResourceLoader.load(file_path)
+			# pack into a single file instead of referencing the existing files
+#			var anim: Resource = ResourceLoader.load(file_path)
+			var anim: Animation = ResourceLoader.load(file_path, "Animation").duplicate() as Animation
 			if anim:
 				var anim_name := relative_prefix
 				if anim_name != "":

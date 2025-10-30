@@ -2,7 +2,8 @@
 extends EditorScenePostImport
 
 const DEBUG_LOGGING: bool = false
-const GST_POLYGON_MASC_ANIM_LIB: String = "res://godot-synty-tools-output/base_locomotion/Polygon-Masculine.tres"
+const GST_POLYGON_MASC_ANIM_LIB: String = "res://godot-synty-tools-output/base_locomotion/Polygon_Masculine.tres"
+const GST_QUAL_ANIM_LIB: String = "res://godot-synty-tools-output/quaternius_ual/Quaternius_UAL.tres"
 
 var animation_tree_builder = preload("res://addons/godot-synty-tools/utils/base_locomotion_animation_tree_builder.gd")
 var character_controller = preload("res://addons/godot-synty-tools/misc/character_controller.gd")
@@ -136,12 +137,20 @@ func process_character(scene: Node, char_file_path: String) -> Node:
 	scene.add_child(anim_player)
 	anim_player.set_owner(scene)
 	anim_player.root_node = anim_player.get_path_to(scene)
-	# preload anim lib if it exists in our output dir
+	# preload polygon anim lib if it exists in our output dir
+	var anim_lib: AnimationLibrary = null
 	if FileAccess.file_exists(GST_POLYGON_MASC_ANIM_LIB):
-		var anim_lib: AnimationLibrary = load(GST_POLYGON_MASC_ANIM_LIB)
-		var err: Error = anim_player.add_animation_library("Polygon Masculine", anim_lib)
+		anim_lib = load(GST_POLYGON_MASC_ANIM_LIB)
+		var err: Error = anim_player.add_animation_library("Polygon_Masculine", anim_lib)
 		if not err == OK:
-			push_error("Could not add animation library to animation player")
+			push_error("Could not add Polygon Masculine to animation player")
+
+	# preload ual anim lib if it exists in our output dir
+#	if FileAccess.file_exists(GST_QUAL_ANIM_LIB):
+#		anim_lib = load(GST_QUAL_ANIM_LIB)
+#		var err: Error = anim_player.add_animation_library("Quaternius_UAL", anim_lib)
+#		if not err == OK:
+#			push_error("Could not add UAL to animation player")
 
 #	print("Adding anim tree")
 	animation_tree_builder.add_animation_tree(scene, anim_player)

@@ -1,8 +1,7 @@
-# res://addons/your_importer/animation_tree_builder.gd
 class_name BaseLocomotionAnimationTreeBuilder
 
 # TODO: handle this so it's not hardcoded or figure something else out
-const ANIM_LIB_PREFIX: String = "Polygon Masculine/"
+const ANIM_LIB_PREFIX: String = "Polygon_Masculine/"
 
 # Helper function to add animation to blend space
 static func add_blend_anim(anim_player: AnimationPlayer, anim_name: String, pos: Vector2, standing_blend) -> void:
