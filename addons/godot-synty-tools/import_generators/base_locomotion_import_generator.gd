@@ -91,13 +91,13 @@ func process() -> Error:
 	print("Loading T-Pose animation libraries and bone maps")
 	var polygon_anim_lib: AnimationLibrary = ResourceLoader.load(anim_lib_res_path_polygon)
 	var sidekick_anim_lib: AnimationLibrary = ResourceLoader.load(anim_lib_res_path_sidekick)
-	if not (polygon_anim_lib or sidekick_anim_lib):
+	if not polygon_anim_lib or not sidekick_anim_lib:
 		push_error("Failed to load animation libraries")
 		return FAILED
 		
 	var polygon_bone_map: BoneMap = ResourceLoader.load(ANIM_BONE_MAP_POLYGON)
 	var sidekick_bone_map: BoneMap = ResourceLoader.load(ANIM_BONE_MAP_SIDEKICK)
-	if not (polygon_bone_map or sidekick_bone_map):
+	if not polygon_bone_map or not sidekick_bone_map:
 		push_error("Failed to load bone maps")
 		return FAILED
 
@@ -329,12 +329,13 @@ func add_animations_recursive(current_path: String, lib: AnimationLibrary, relat
 			new_prefix += file_name
 			add_animations_recursive(file_path, lib, new_prefix)
 		elif file_name.ends_with(".res"):
-			if "RootMotion" in file_path:
-				continue
-
-			# transition animations (we're currently letting Godot blend between animations)
-			if "_To" in file_path:
-				continue
+			# NOTE: i think this messes up some stuff
+#			if "RootMotion" in file_path:
+#				continue
+#
+#			# transition animations (we're currently letting Godot blend between animations)
+#			if "_To" in file_path:
+#				continue
 
 			# pack into a single file instead of referencing the existing files
 #			var anim: Resource = ResourceLoader.load(file_path)

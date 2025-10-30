@@ -146,11 +146,11 @@ func process_character(scene: Node, char_file_path: String) -> Node:
 			push_error("Could not add Polygon Masculine to animation player")
 
 	# preload ual anim lib if it exists in our output dir
-#	if FileAccess.file_exists(GST_QUAL_ANIM_LIB):
-#		anim_lib = load(GST_QUAL_ANIM_LIB)
-#		var err: Error = anim_player.add_animation_library("Quaternius_UAL", anim_lib)
-#		if not err == OK:
-#			push_error("Could not add UAL to animation player")
+	if FileAccess.file_exists(GST_QUAL_ANIM_LIB):
+		anim_lib = load(GST_QUAL_ANIM_LIB)
+		var err: Error = anim_player.add_animation_library("Quaternius_UAL", anim_lib)
+		if not err == OK:
+			push_error("Could not add UAL to animation player")
 
 #	print("Adding anim tree")
 	animation_tree_builder.add_animation_tree(scene, anim_player)

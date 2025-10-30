@@ -35,8 +35,8 @@ func build_content() -> void:
 	quaternius_uap_btn.text = "Quaternius UAL"
 	quaternius_uap_btn.custom_minimum_size = Vector2(200, 60)
 	quaternius_uap_btn.pressed.connect(func(): plugin._show_submenu("quaternius_ual"))
-#	button_grid.add_child(quaternius_uap_btn)
-	
+	button_grid.add_child(quaternius_uap_btn)
+
 	# Add more buttons here - they'll automatically flow to new rows!
 	# Example:
 	# var new_module_btn = Button.new()
