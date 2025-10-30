@@ -10,12 +10,14 @@ var popup_manager: PopupManager
 var main_menu: BaseMenu
 var base_locomotion_menu: BaseMenu
 var scifi_city_menu: BaseMenu
+var quaternius_ual_menu: BaseMenu
 
 func _ready():
 	# Register menu builders
 	menu_builders["main"] = func(): _show_submenu_helper(main_menu, "Godot Synty Tools")
 	menu_builders["base_locomotion"] = func(): _show_submenu_helper(base_locomotion_menu, "Base Locomotion")
 	menu_builders["scifi_city"] = func(): _show_submenu_helper(scifi_city_menu, "Sci-Fi City")
+	menu_builders["quaternius_ual"] = func(): _show_submenu_helper(quaternius_ual_menu, "Quaternius UAL")
 
 func _show_submenu(menu_key: String):
 	if menu_builders.has(menu_key):
@@ -35,13 +37,16 @@ func _enter_tree():
 	scifi_city_menu = preload("res://addons/godot-synty-tools/ui/scifi_city_menu.gd").new()
 	scifi_city_menu.plugin = self
 	
+	quaternius_ual_menu = preload("res://addons/godot-synty-tools/ui/quaternius_ual_menu.gd").new()
+	quaternius_ual_menu.plugin = self
+	
 func _exit_tree():
 	remove_tool_menu_item(plugin_name)
 	if popup_manager:
 		popup_manager.close_popup()
 	
 	# Cleanup all menus
-	for menu in [main_menu, base_locomotion_menu, scifi_city_menu]:
+	for menu in [main_menu, base_locomotion_menu, scifi_city_menu, quaternius_ual_menu]:
 		if menu:
 			menu.cleanup()
 
@@ -55,7 +60,7 @@ func _close_popup():
 	current_menu_stack.clear()
 
 	# Cleanup all menus
-	for menu in [main_menu, base_locomotion_menu, scifi_city_menu]:
+	for menu in [main_menu, base_locomotion_menu, scifi_city_menu, quaternius_ual_menu]:
 		if menu:
 			menu.cleanup()
 
