@@ -1,11 +1,11 @@
 @tool
 extends EditorScenePostImport
 
-const DEBUG_LOGGING: bool = true
+const DEBUG_LOGGING: bool = false
 const LOOPED_ANIMS: Array[Variant] = []
 const OUTPUT_DIR: String = "res://godot-synty-tools-output/quaternius_ual/"
-const REMOVE_PATH_PREFIX: String = "Rig/"
 
+# TODO: move this to the import generator if possible, post import should be node hierarchy setup only (if possible)
 func _post_import(scene: Node) -> Object:
 	var src_file: String = get_source_file()
 

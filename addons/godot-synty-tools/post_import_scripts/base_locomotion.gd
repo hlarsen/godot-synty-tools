@@ -18,6 +18,7 @@ const LOOPED_ANIMS: Array[Variant] = [
 	"InAir",
 ]
 
+# TODO: move this to the import generator if possible, post import should be node hierarchy setup only (if possible)
 # This Post Install script is probably not too useful on its own, it just creates animation .resources files
 # At this point we've already fixed the animations, so if you run this without it the animations won't work correctly
 func _post_import(scene: Node) -> Object:
