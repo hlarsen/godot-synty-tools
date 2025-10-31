@@ -2,12 +2,22 @@
 extends BaseImportGenerator
 class_name BaseLocomotionImportGenerator
 
+# TODO: clean up hardcoded paths in create_animation_libraries() and process()
+
 var export_subdir: String = EXPORT_BASE_PATH.path_join(MODULE)
 var post_import_script: String = POST_IMPORT_SCRIPT_BASE_PATH.path_join(MODULE + ".gd") 
 
 # Base Locomotion Bone Maps
 const ANIM_BONE_MAP_POLYGON: String = "res://addons/godot-synty-tools/bone_maps/base_locomotion_v3_polygon.tres"
 const ANIM_BONE_MAP_SIDEKICK: String = "res://addons/godot-synty-tools/bone_maps/base_locomotion_v3_sidekick.tres"
+const ANIM_NAME_REPLACEMENTS: Dictionary[Variant, Variant] = {
+	"A_": "",
+	"A_MOD_BL_": "",
+	"_Masc": "",
+	"_Femn": "",
+	"_Neut": "",
+	".res": "",
+}
 # The T-Pose animation we need to use as a RESET for the other animations
 const ANIM_TPOSE_PATH_POLYGON: String = "Polygon/Neutral/Additive/TPose/A_TPose_Neut.fbx"
 const ANIM_TPOSE_PATH_SIDEKICK: String = "Sidekick/Neutral/Additive/TPose/A_MOD_BL_TPose_Neut.fbx"
@@ -347,16 +357,7 @@ func add_animations_recursive(current_path: String, lib: AnimationLibrary, relat
 	dir.list_dir_end()
 
 func clean_animation_name(final: String) -> String:
-	var fix: Dictionary[Variant, Variant] = {
-		"A_": "",
-		"A_MOD_BL_": "",
-		"_Masc": "",
-		"_Femn": "",
-		"_Neut": "",
-		".res": "",
-	}
-
-	for f in fix.keys():
-		final = final.replace(f, fix[f])
+	for f in ANIM_NAME_REPLACEMENTS.keys():
+		final = final.replace(f, ANIM_NAME_REPLACEMENTS[f])
 
 	return final

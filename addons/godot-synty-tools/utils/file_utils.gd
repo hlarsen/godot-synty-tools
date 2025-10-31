@@ -4,27 +4,25 @@ class_name FileUtils
 static func list_files_recursive(base_path: String) -> Array[String]:
 	var files: Array[String] = []
 
-	var dir := DirAccess.open(base_path)
+	var dir: DirAccess = DirAccess.open(base_path)
 	if not dir:
 		push_error("Cannot open directory for listing: " + base_path)
 		return files
 
 	dir.include_navigational = false
 	dir.include_hidden = false
-	dir.list_dir_begin()
-	var dir_item: String = dir.get_next()
-	while dir_item != "":
-		var full_path := base_path.path_join(dir_item)
-		if dir.current_is_dir():
+	
+	var dir_items: PackedStringArray = dir.get_files() + dir.get_directories()
+	for dir_item in dir_items:
+		var full_path: String = base_path.path_join(dir_item)
+		if DirAccess.dir_exists_absolute(full_path):
 			files.append_array(list_files_recursive(full_path))
 		else:
 			files.append(full_path)
-		dir_item = dir.get_next()
-	dir.list_dir_end()
 
 	return files
 
-static func copy_directory_recursive(src_path: String, dst_path: String) -> int:
+static func copy_directory_recursive(src_path: String, dst_path: String, ext_filter: Array[String] = []) -> int:
 	var root_dir: DirAccess = DirAccess.open("res://")
 	if not root_dir:
 		push_error("Cannot open root_dir to create directories")
@@ -42,26 +40,27 @@ static func copy_directory_recursive(src_path: String, dst_path: String) -> int:
 
 	src_dir.include_navigational = false
 	src_dir.include_hidden = false
-	src_dir.list_dir_begin()
-	var dir_item: String = src_dir.get_next()
-	while dir_item != "":
+	
+	var dir_items: PackedStringArray = src_dir.get_files() + src_dir.get_directories()
+	for dir_item in dir_items:
 		var src_file_path: String = src_path.path_join(dir_item)
 		var dst_file_path: String = dst_path.path_join(dir_item)
 
-		if src_dir.current_is_dir():
-			err = copy_directory_recursive(src_file_path, dst_file_path)
+		if DirAccess.dir_exists_absolute(src_file_path):
+			err = copy_directory_recursive(src_file_path, dst_file_path, ext_filter)
 			if err != OK:
 				push_error("Cannot copy from " + src_path + " to " + dst_path)
 				return FAILED
 		else:
+			if not ext_filter.is_empty():
+				if not src_file_path.get_extension().to_lower() in ext_filter:
+					push_warning("Not copying file with extension: " + src_file_path)
+					continue
+
 			err = src_dir.copy(src_file_path, dst_file_path)
 			if err != OK:
 				push_error("Error copying file: " + dir_item)
 				return FAILED
-
-		dir_item = src_dir.get_next()
-
-	src_dir.list_dir_end()
 
 	return OK
 
@@ -72,12 +71,12 @@ static func delete_directory_recursive(path: String) -> int:
 
 	dir.include_navigational = false
 	dir.include_hidden = false
-	dir.list_dir_begin()
-	var dir_item: String = dir.get_next()
-	while dir_item != "":
+	
+	var dir_items: PackedStringArray = dir.get_files() + dir.get_directories()
+	for dir_item in dir_items:
 		var file_path: String = path.path_join(dir_item)
 
-		if dir.current_is_dir():
+		if DirAccess.dir_exists_absolute(file_path):
 			var err: int = delete_directory_recursive(file_path)
 			if err != OK:
 				push_error("Error deleting directory: " + dir_item)
@@ -87,10 +86,6 @@ static func delete_directory_recursive(path: String) -> int:
 			if err != OK:
 				push_error("Error deleting file: " + dir_item)
 				return err
-		
-		dir_item = dir.get_next()
-
-	dir.list_dir_end()
 
 	return DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
@@ -128,5 +123,5 @@ static func verify_import_files_exist(file_paths: Array[String]) -> bool:
 	else:
 		push_error("Failed to verify %d .import files:" % missing_files.size())
 		for file in missing_files:
-			push_error("  - " + file)
+			push_error(" - " + file)
 		return false

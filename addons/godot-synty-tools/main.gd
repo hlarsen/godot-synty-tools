@@ -11,6 +11,9 @@ var main_menu: BaseMenu
 var base_locomotion_menu: BaseMenu
 var scifi_city_menu: BaseMenu
 var quaternius_ual_menu: BaseMenu
+var synty_generic_menu: BaseMenu
+
+var menus: Array[Variant] = [main_menu, base_locomotion_menu, scifi_city_menu, quaternius_ual_menu, synty_generic_menu]
 
 func _ready():
 	# Register menu builders
@@ -18,11 +21,14 @@ func _ready():
 	menu_builders["base_locomotion"] = func(): _show_submenu_helper(base_locomotion_menu, "Base Locomotion")
 	menu_builders["scifi_city"] = func(): _show_submenu_helper(scifi_city_menu, "Sci-Fi City")
 	menu_builders["quaternius_ual"] = func(): _show_submenu_helper(quaternius_ual_menu, "Quaternius UAL")
+	menu_builders["synty_generic"] = func(): _show_submenu_helper(synty_generic_menu, "Synty Generic")
 
 func _show_submenu(menu_key: String):
 	if menu_builders.has(menu_key):
 		current_menu_stack.append(menu_key)
 		menu_builders[menu_key].call()
+	else:
+		push_warning("Could not find menu key: " + menu_key)
 
 func _enter_tree():
 	add_tool_menu_item(plugin_name, _show_popup)
@@ -39,6 +45,9 @@ func _enter_tree():
 	
 	quaternius_ual_menu = preload("res://addons/godot-synty-tools/ui/quaternius_ual_menu.gd").new()
 	quaternius_ual_menu.plugin = self
+
+	synty_generic_menu = preload("res://addons/godot-synty-tools/ui/synty_generic_menu.gd").new()
+	synty_generic_menu.plugin = self
 	
 func _exit_tree():
 	remove_tool_menu_item(plugin_name)
@@ -46,7 +55,7 @@ func _exit_tree():
 		popup_manager.close_popup()
 	
 	# Cleanup all menus
-	for menu in [main_menu, base_locomotion_menu, scifi_city_menu, quaternius_ual_menu]:
+	for menu in menus:
 		if menu:
 			menu.cleanup()
 
@@ -60,7 +69,7 @@ func _close_popup():
 	current_menu_stack.clear()
 
 	# Cleanup all menus
-	for menu in [main_menu, base_locomotion_menu, scifi_city_menu, quaternius_ual_menu]:
+	for menu in menus:
 		if menu:
 			menu.cleanup()
 
@@ -80,6 +89,8 @@ func _go_back():
 		var previous_menu = current_menu_stack[current_menu_stack.size() - 1]
 		menu_builders[previous_menu].call()
 	else:
+		popup_manager.popup_window.size = popup_manager.popup_default_size
+
 		_show_main_menu()
 
 func _on_exit():

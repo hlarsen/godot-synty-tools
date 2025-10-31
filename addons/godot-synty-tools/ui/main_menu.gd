@@ -37,6 +37,13 @@ func build_content() -> void:
 	quaternius_uap_btn.pressed.connect(func(): plugin._show_submenu("quaternius_ual"))
 	button_grid.add_child(quaternius_uap_btn)
 
+	# Quaternius UAL button
+	var synty_generic_btn = Button.new()
+	synty_generic_btn.text = "Synty Generic"
+	synty_generic_btn.custom_minimum_size = Vector2(200, 60)
+	synty_generic_btn.pressed.connect(func(): plugin._show_submenu("synty_generic"))
+	button_grid.add_child(synty_generic_btn)
+
 	center_container.add_child(button_grid)
 	container.add_child(center_container)
 

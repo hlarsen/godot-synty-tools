@@ -1,38 +1,23 @@
 @tool
 extends BaseImportGenerator
-class_name ScifiCityImportGenerator
+class_name SyntyGenericImportGenerator
 
-var default_atlas_texture: String = "PolygonScifi_01_A.png"
-var export_subdir: String = EXPORT_BASE_PATH.path_join("scifi_city")
-var post_import_script: String = POST_IMPORT_SCRIPT_BASE_PATH.path_join("scifi_city.gd") 
+var default_atlas_texture: String = ""
+var export_subdir: String = EXPORT_BASE_PATH.path_join("synty_generic")
+var post_import_script: String = POST_IMPORT_SCRIPT_BASE_PATH.path_join("synty_generic.gd") 
 
+var models_dir: String = "FBX"
+var model_extensions_to_import: Array[String] = ["fbx"]
+var textures_dir: String = "Textures"
+var texture_extensions_to_import: Array[String] = ["png"]
+
+# NOTE: most compatible?
 const BONE_MAP: String = "res://addons/godot-synty-tools/bone_maps/scifi_city_v4.tres"
-const KEEP_TEMP_DIR: bool = false
-const MODULE: String = "scifi_city"
+const KEEP_TEMP_DIR: bool = true
+const MODULE: String = "synty_generic"
 
 # TODO: debug files that don't work/are incorrect
 const FILE_MAP: Dictionary[String, String] = {
-	"SM_Bld_Background_": "PolygonScifi_Background_Building_Emissive", # no albedo texture
-	"_Glass": "Glass_01_A",	# no albedo texture (match Glass?)
-	"Glass_": "Glass_01_A",	# no albedo texture (match Glass?)
-#	"SM_HologramPods_": "PolygonScifi_Hologram_Outline", # no albedo texture
-	"SkyDome": "SimpleSky", # uses custom shader
-	"SM_Env_Graffiti_": "Billboards",
-	"SM_Env_Planet_Plane_01": "Planet_Material_01",
-	"SM_Env_Planet_Plane_02": "Planet_Material_02",
-	"SM_Env_Road": "PolygonSciFi_Road_01", # uses custom shader
-	"Fire_01_FX": "Polygon_Scifi_FX", # uses custom shader
-	# TODO: skipping the other FX files
-#	"SM_Prop_Hologram_Bottle_": "PolygonScifi_Hologram_Base",	# uses custom shader - matching issue?
-#	"SM_Prop_Bottle_": "PolygonScifi_Hologram_Outline",	# no albedo texture - matching issue?
-#	"SM_Prop_Hologram_": "PolygonScifi_Hologram_Base",	# uses custom shader - matching issue?
-#	"SM_Prop_LargeSign_": "PolygonScifi_Hologram_Outline",	# no albedo texture - matching issue?
-#	"SM_Prop_Jar": "Glass_01_Jar", # no albedo texture (match Jar?)
-	"SM_Prop_Posters_": "Billboards",
-	"SM_Sign_Ad_": "Signs",
-	"SM_Sign_Billboard_Large_": "Billboards",
-#	"SM_Sign_Neon_": "PolygonScifi_NeonSigns", # uses custom shader
-#	"SM_Sign_Neon_Flat_": "PolygonScifi_NeonSigns", # uses custom shader	
 }
 
 func process() -> Error:
@@ -45,100 +30,103 @@ func process() -> Error:
 		return err
 
 	print("Creating temp dir: " + MODULE)
-	var temp_dir: DirAccess = DirAccess.create_temp(MODULE, KEEP_TEMP_DIR)
-	if not temp_dir:
-		push_error("Can't create temp directory: " + error_string(temp_dir.get_open_error()))
-		return temp_dir.get_open_error()
+	var temp_dir_access: DirAccess = DirAccess.create_temp(MODULE, KEEP_TEMP_DIR)
+	if not temp_dir_access:
+		push_error("Can't create temp directory: " + error_string(temp_dir_access.get_open_error()))
+		return temp_dir_access.get_open_error()
 
-	var temp_dir_path: String = temp_dir.get_current_dir()
-	print("Using temp dir: " + temp_dir_path)
+	var temp_dir: String = temp_dir_access.get_current_dir()
+	var temp_dir_textures: String = temp_dir.path_join(textures_dir)
+	var temp_dir_models: String = temp_dir.path_join(models_dir)
+	var export_subdir_textures: String = export_subdir.path_join(textures_dir)
+	var export_subdir_models: String = export_subdir.path_join(models_dir)
+	print("Using temp dir: " + temp_dir)
 
-	# copy textures to the project first because we reference them in the post import of the fbx files
-	# NOTE: we're just copying them directly to export_subdir and generating .import files before forcing a scan
-	# we should copy to temp_dir first. generate, then copy to export_subdir like we do for everything else
-	print("Copying files from " + selected_folder_path.path_join("Textures") + " to " + export_subdir.path_join("Textures"))
-	err = FileUtils.copy_directory_recursive(selected_folder_path.path_join("Textures"), export_subdir.path_join("Textures"))
+	# copy textures to the project first because we reference them in the post import of the models
+	print("Copying texture files from " + selected_folder_path.path_join(textures_dir) + " to " + temp_dir_textures)
+	err = FileUtils.copy_directory_recursive(selected_folder_path.path_join(textures_dir), temp_dir_textures, texture_extensions_to_import)
 	if not err == OK:
 		push_error("Error copying: " + error_string(err))
 		return err
 
 	# generate .import files for the textures so they don't re-import when we fix the meshes
-	var texture_files: Array[String] = FileUtils.list_files_recursive(export_subdir.path_join("Textures"))
-	print("Adding .import files for " + str(texture_files.size()) + " PNG files in " + export_subdir.path_join("Textures"))
+	# this happens because Godot sees we want to use them for 3D and changes the import settings
+	var texture_files: Array[String] = FileUtils.list_files_recursive(temp_dir_textures)
+	print("Adding .import files for " + str(texture_files.size()) + " texture files in " + temp_dir_textures)
 	for tex_file in texture_files:
-		if not tex_file.ends_with(".png"):
-			continue
-
 		err = generate_texture_import_file_for_3d(tex_file)
 		if err != OK:
 			push_error("Failed to create .import for " + tex_file)
 			return err
 
-	if not await reimport_files(texture_files, import_wait_timeout):
+	print("Copying texture files from " + temp_dir_textures + " to " + export_subdir_textures)
+	err = FileUtils.copy_directory_recursive(temp_dir_textures, export_subdir_textures)
+	if not err == OK:
+		push_error("Error copying texture files: " + error_string(err))
+		return err
+
+	if not await reimport_files(FileUtils.list_files_recursive(export_subdir_textures).filter(func(f): return !f.ends_with(".import")), import_wait_timeout):
 		push_error("Failed to import textures files")
 		return FAILED
 
-	print("Copying files from " + selected_folder_path + " to " + temp_dir_path)
-	err = FileUtils.copy_directory_recursive(selected_folder_path.path_join("FBX"), temp_dir_path.path_join("FBX"))
+	# textures are in the project, time for the models
+	print("Copying model files from " + selected_folder_path + " to " + temp_dir_models)
+	err = FileUtils.copy_directory_recursive(selected_folder_path.path_join(models_dir), temp_dir_models, model_extensions_to_import)
 	if not err == OK:
-		push_error("Error copying files: " + error_string(err))
+		push_error("Error copying model files: " + error_string(err))
 		return err
 
-	# textures are in the project, time for the fbx files
-	var imports_to_create: Array[String] = FileUtils.list_files_recursive(temp_dir_path).filter(func(f): return f.ends_with(".fbx"))
+	var model_files: Array[String] = FileUtils.list_files_recursive(temp_dir_models)
 	var expected_imports: Array[String] = []
-	print("Adding .import files for " + str(imports_to_create.size()) + " FBX files in " + temp_dir_path)
-	for file in imports_to_create:
-		if not file.ends_with(".fbx"):
-			continue
-
-		if file.ends_with("Characters.fbx"):
+	print("Adding .import files for " + str(model_files.size()) + " FBX files in " + temp_dir_models)
+	for file in model_files:
+		if file.get_file() == "Characters.fbx":
 			print("Processing Characters.fbx")
-			await process_characters(file, temp_dir_path, export_subdir, expected_imports)
+			await process_characters(file, temp_dir_models, export_subdir_models, expected_imports)
 			continue
 
-		var tmp_file_path: String = file.replace(temp_dir_path, export_subdir)
+		var tmp_file_path: String = file.replace(temp_dir_models, export_subdir_models)
 		err = generate_fbx_import_file(file, tmp_file_path)
 		if not err == OK:
 			push_error("Error generating import file for " + file + ": " + error_string(err))
 			return err
 
-		expected_imports.append(file.replace(temp_dir_path, export_subdir))
+#		expected_imports.append(file.replace(temp_dir, export_subdir))
 
 	# delete Characters.fbx (we created separate char files so we don't need it)
-	err = DirAccess.remove_absolute(export_subdir.path_join("FBX").path_join("Characters.fbx"))
+	err = DirAccess.remove_absolute(export_subdir_models.path_join("Characters.fbx"))
 	if not err == OK:
 		push_error("Error deleting: " + error_string(err))
 		return err
 
-	err = DirAccess.remove_absolute(temp_dir_path.path_join("FBX").path_join("Characters.fbx"))
+	err = DirAccess.remove_absolute(temp_dir_models.path_join("Characters.fbx"))
 	if not err == OK:
 		push_error("Error deleting: " + error_string(err))
 		return err
 
-	print("Copy files from " + temp_dir_path + " to " + export_subdir)
-	err = FileUtils.copy_directory_recursive(temp_dir_path, export_subdir)
+	print("Copy files from " + temp_dir_models + " to " + export_subdir_models)
+	err = FileUtils.copy_directory_recursive(temp_dir_models, export_subdir_models)
 	if not err == OK:
 		push_error("Error copying: " + error_string(err))
 		return err
 
-	if not await reimport_files(expected_imports, import_wait_timeout):
+	if not await reimport_files(FileUtils.list_files_recursive(export_subdir_models).filter(func(f): return !f.ends_with(".import")), import_wait_timeout):
 		push_error("Reimport before scene creation failed")
 		return FAILED
 
-	# we need to fix materials here, doing it in post import triggers a re-import
-	# theoretically we could move it to post import, but a quick try was causing material errors...
-	# maybe try another time, but this is working
-	# added bonus of creating scenes
-	print("Fixing materials and creating scenes")
-	err = create_scenes(expected_imports)
-	if err != OK:
-		push_error("Failed to apply materials")
-		return err
-
-	if not await reimport_files([], import_wait_timeout):
-		push_error("Final reimport failed")
-		return FAILED
+#	# we need to fix materials here, doing it in post import triggers a re-import
+#	# theoretically we could move it to post import, but a quick try was causing material errors...
+#	# maybe try another time, but this is working
+#	# added bonus of creating scenes
+#	print("Fixing materials and creating scenes")
+#	err = create_scenes(expected_imports)
+#	if err != OK:
+#		push_error("Failed to apply materials")
+#		return err
+#
+#	if not await reimport_files([], import_wait_timeout):
+#		push_error("Final reimport failed")
+#		return FAILED
 
 	print("Finished running " + MODULE + " processing with folder: ", selected_folder_path)
 
@@ -148,7 +136,7 @@ func generate_fbx_import_file(src_file, tmp_file_path) -> Error:
 	var config = ConfigFile.new()
 
 	# NOTE: minimum requirements for importing an FBX appear to be: deps > source_file and params/fbx_importer
-	config.set_value("deps", "source_file", tmp_file_path)
+#	config.set_value("deps", "source_file", tmp_file_path)
 	config.set_value("params", "import_script/path", post_import_script)
 	config.set_value("params", "fbx/importer", 0)
 
@@ -158,8 +146,8 @@ func generate_character_fbx_import_file(src_file: String, tmp_file_path: String,
 	var config = ConfigFile.new()
 
 	# NOTE: minimum requirements for importing an FBX appear to be: deps > source_file and params/fbx_importer
-	config.set_value("deps", "source_file", tmp_file_path)
-	config.set_value("params", "nodes/root_type", "CharacterBody3D")	# 
+#	config.set_value("deps", "source_file", tmp_file_path)
+	config.set_value("params", "nodes/root_type", "CharacterBody3D")
 	config.set_value("params", "import_script/path", post_import_script)
 	config.set_value("params", "fbx/importer", 0)
 
@@ -179,14 +167,14 @@ func generate_character_fbx_import_file(src_file: String, tmp_file_path: String,
 
 	return config.save(src_file + ".import")
 
-func process_characters(file_src, temp_dir_path, export_subdir, expected_imports) -> Error:
-	var original_char = export_subdir.path_join("FBX").path_join(file_src.get_file())
-	var err: Error = FileUtils.copy_file(file_src, original_char)
+func process_characters(file_src, tmp_dir_models, export_subdir_models, expected_imports) -> Error:
+	var imported_src = export_subdir_models.path_join(file_src.get_file())
+	var err: Error = FileUtils.copy_file(file_src, imported_src)
 	if not err == OK:
 		push_error("Error copying: " + error_string(err))
 		return err
 
-	if not await reimport_files([original_char], import_wait_timeout):
+	if not await reimport_files([imported_src], import_wait_timeout):
 		push_error("Failed to reimport Characters.fbx")
 		return FAILED
 
@@ -195,10 +183,10 @@ func process_characters(file_src, temp_dir_path, export_subdir, expected_imports
 		push_error("Failed to load bone map")
 		return FAILED
 
-	print("Load scene for: " + original_char)
-	var scene = load(original_char)
+	print("Load scene for: " + imported_src)
+	var scene = load(imported_src)
 	if not scene:
-		push_error("Failed to load: " + original_char)
+		push_error("Failed to load: " + imported_src)
 		return ERR_CANT_OPEN
 
 	var root = scene.instantiate()
@@ -209,21 +197,21 @@ func process_characters(file_src, temp_dir_path, export_subdir, expected_imports
 			meshes.append(child)
 
 	for mesh in meshes:
-#		print("Creating separate character for mesh: " + mesh.name)
-		var save_path = temp_dir_path.path_join("FBX").path_join(mesh.name + ".fbx")
+#		print("Creating duplicate character file for mesh: " + mesh.name)
+		var save_path = tmp_dir_models.path_join(mesh.name + ".fbx")
 		err = FileUtils.copy_file(file_src, save_path)
 		if not err == OK:
 			push_error("Error saving new char file: " + error_string(err))
 			return err
 
 #		print("Generating .import for character " + save_path.get_file() + " in dir " + temp_dir_path)
-		err = generate_character_fbx_import_file(save_path, temp_dir_path, bone_map)
+		err = generate_character_fbx_import_file(save_path, tmp_dir_models, bone_map)
 		if not err == OK:
 			push_error("Error creating .import file: " + error_string(err))
 			return err
 
-		expected_imports.append(save_path.replace(temp_dir_path, export_subdir))
-		
+		expected_imports.append(save_path.replace(tmp_dir_models, export_subdir_models))
+
 	return OK
 
 func create_scenes(scene_paths: Array[String]) -> Error:
@@ -287,7 +275,7 @@ func fix_mesh_materials(mesh: MeshInstance3D) -> void:
 	for surface_idx in range(mesh.mesh.get_surface_count()):
 #		print("Processing material for mesh:", mesh.name, "Surface:", surface_idx)
 		var new_mat = StandardMaterial3D.new()
-		new_mat.albedo_color = Color(1,1,1)
+		new_mat.albedo_color = Color(1.0, 1.0, 1.0)
 
 		var file_to_use: String = default_atlas_texture
 		for key in FILE_MAP.keys():
@@ -295,7 +283,7 @@ func fix_mesh_materials(mesh: MeshInstance3D) -> void:
 				file_to_use = FILE_MAP[key] + ".png"
 				break
 
-		var tex_path: String = EXPORT_BASE_PATH.path_join(MODULE).path_join("/Textures/").path_join(file_to_use)
+		var tex_path: String = EXPORT_BASE_PATH.path_join(MODULE).path_join("/" + textures_dir + "/").path_join(file_to_use)
 		if not FileAccess.file_exists(tex_path):
 			print("Texture not found, using default fallback:", tex_path)
 
@@ -308,7 +296,7 @@ func fix_mesh_materials(mesh: MeshInstance3D) -> void:
 func generate_texture_import_file_for_3d(texture_path: String) -> Error:
 	var config = ConfigFile.new()
 
-	config.set_value("deps", "source_file", texture_path)
+#	config.set_value("deps", "source_file", texture_path)
 
 	# specify the differences betewen the default .import Godot generates and after its set on a 3d object
 	config.set_value("params", "compress/mode", 2)

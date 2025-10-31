@@ -6,6 +6,7 @@ var plugin: EditorPlugin
 var popup_window: Window
 var main_container: VBoxContainer
 var button_grid: Control
+var	popup_default_size: Vector2i = Vector2i(475, 500)
 
 func create_popup(plugin_ref: EditorPlugin, plugin_name: String) -> void:
 	plugin = plugin_ref
@@ -16,7 +17,7 @@ func create_popup(plugin_ref: EditorPlugin, plugin_name: String) -> void:
 	# Create main window
 	popup_window = Window.new()
 	popup_window.title = plugin_name
-	popup_window.size = Vector2i(475, 500)
+	popup_window.size = popup_default_size
 	popup_window.unresizable = false
 	popup_window.borderless = false
 	popup_window.transient = true
