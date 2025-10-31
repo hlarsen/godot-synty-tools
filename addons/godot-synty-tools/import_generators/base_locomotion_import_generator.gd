@@ -1,10 +1,8 @@
 @tool
 extends BaseImportGenerator
-# TODO: do we need to process both Polygon and Sidekick if we're eventually just using Godot to map via Skeletons?
 class_name BaseLocomotionImportGenerator
 
 var export_subdir: String = EXPORT_BASE_PATH.path_join(MODULE)
-var selected_folder_path: String = ""
 var post_import_script: String = POST_IMPORT_SCRIPT_BASE_PATH.path_join(MODULE + ".gd") 
 
 # Base Locomotion Bone Maps
@@ -13,7 +11,6 @@ const ANIM_BONE_MAP_SIDEKICK: String = "res://addons/godot-synty-tools/bone_maps
 # The T-Pose animation we need to use as a RESET for the other animations
 const ANIM_TPOSE_PATH_POLYGON: String = "Polygon/Neutral/Additive/TPose/A_TPose_Neut.fbx"
 const ANIM_TPOSE_PATH_SIDEKICK: String = "Sidekick/Neutral/Additive/TPose/A_MOD_BL_TPose_Neut.fbx"
-const IMPORT_WAIT_TIMEOUT: int = 60
 const KEEP_TEMP_DIR: bool = false
 const MODULE: String = "base_locomotion"
 const RESET_ANIM_NAME: String = "RESET"
@@ -66,7 +63,7 @@ func process() -> Error:
 	var export_subdir_tpose_fixed: String = export_subdir.path_join(TPOSE_WORKING_DIR)
 	var subdir_fixed_tpose_polygon: String = export_subdir_tpose_fixed.path_join(temp_tpose_path_polygon.get_file())
 	var subdir_fixed_tpose_sidekick: String = export_subdir_tpose_fixed.path_join(temp_tpose_path_sidekick.get_file())
-	if not await reimport_files([subdir_fixed_tpose_polygon, subdir_fixed_tpose_sidekick]):
+	if not await reimport_files([subdir_fixed_tpose_polygon, subdir_fixed_tpose_sidekick], import_wait_timeout):
 		push_error("Failed to import T-Pose animation files")
 		return FAILED
 
@@ -83,10 +80,6 @@ func process() -> Error:
 	if not (anim_lib_res_path_polygon or anim_lib_res_path_sidekick):
 		push_error("Could not create animation libraries")
 		return FAILED
-
-#	if not await reimport_files([tpose_res_path_polygon, tpose_res_path_sidekick, anim_library_polygon, anim_library_sidekick]):
-#		push_error("Failed to import interim tpose files")
-#		return FAILED
 
 	print("Loading T-Pose animation libraries and bone maps")
 	var polygon_anim_lib: AnimationLibrary = ResourceLoader.load(anim_lib_res_path_polygon)
@@ -118,7 +111,7 @@ func process() -> Error:
 		push_error("Error copying: " + error_string(err))
 		return err
 
-	if not await reimport_files(expected_imports, IMPORT_WAIT_TIMEOUT):
+	if not await reimport_files(expected_imports, import_wait_timeout):
 		push_error("Failed to import fixed animation files")
 		return FAILED
 
@@ -354,32 +347,7 @@ func add_animations_recursive(current_path: String, lib: AnimationLibrary, relat
 	dir.list_dir_end()
 
 func clean_animation_name(final: String) -> String:
-	var fix = {
-#		"90L_": "_90 Left_",
-#		"90R_": "_90 Right_",
-#		"180L_": "_180 Left_",
-#		"180R_": "_180 Right_",
-#		"25F_": "_25 Forward_",
-#		"LFoot_": "_Left Foot_",
-#		"RFoot_": "_Right Foot_",
-#	
-#		"feFL_": "fe Forward Left_",
-#		"feFR_": "fe Forward Right_",
-#		"feBL_": "fe Back Left_",
-#		"feBR_": "fe Back Right_",
-#		"feF_": "fe Forward_",
-#		"feB_": "fe Backward_",
-#		"feL_": "fe Left_",
-#		"feR_": "fe Right_",
-#	
-#		"FwdStrafe": "ForwardStrafe",
-#		"BckStrafe": "BackStrafe",
-#	
-#		"IdleHard": "Idle Hard",
-#		"IdleMedium": "Idle Medium",
-#		"IdleSoft": "Idle Soft",
-#		"_Fall": "_Fall_",
-	
+	var fix: Dictionary[Variant, Variant] = {
 		"A_": "",
 		"A_MOD_BL_": "",
 		"_Masc": "",
@@ -390,18 +358,5 @@ func clean_animation_name(final: String) -> String:
 
 	for f in fix.keys():
 		final = final.replace(f, fix[f])
-
-	# replace all underscores and multiple spaces with a single space
-#	var regex = RegEx.new()
-#	regex.compile("[_\\s]+")
-#	final = regex.sub(final, " ")
-
-#	# Special cases
-#	if final == "Walk F":
-#		final = "Walk Forward"
-#	elif final == "Run F":
-#		final = "Run Forward"
-#	elif final == "Sprint F":
-#		final = "Sprint Forward"
 
 	return final

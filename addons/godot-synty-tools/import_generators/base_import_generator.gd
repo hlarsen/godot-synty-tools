@@ -2,10 +2,12 @@
 extends RefCounted
 class_name BaseImportGenerator
 
+var import_wait_timeout: int = 90
 var plugin: EditorPlugin
+var selected_folder_path: String = ""
 
-const EXPORT_BASE_PATH: String = "res://godot-synty-tools-output"
 const BONE_MAP_BASE_PATH: String = "res://addons/godot-synty-tools/bone_maps"
+const EXPORT_BASE_PATH: String = "res://godot-synty-tools-output"
 const POST_IMPORT_SCRIPT_BASE_PATH: String = "res://addons/godot-synty-tools/post_import_scripts"
 
 # Main processing function - override this
