@@ -30,6 +30,10 @@ Not Processed:
 - Skybox (likely able to be fixed, except for shaders)
 - FX_ files: shaders need to be ported individually
 
+Possible Issues:
+- Some textures may be incorrect (see the importer FILE_MAP)
+- Probably need to adjust collider shapes for some/all objects
+
 - Characters.fbx
 - Split into separate files
 - Clean up imported object hierarchy (post import)

@@ -5,12 +5,15 @@ extends BaseMenu
 var file_dialog: EditorFileDialog
 var back_button: Button
 var exit_button: Button
+var import_wait_timeout: int = 90
 var instruction_default: String = ""
 var run_button: Button
 var select_folder_button: Button
 var selected_folder_label: Label
 var selected_folder_path: String = ""
 var status_label: Label
+var timeout_label: Label
+var timeout_input: LineEdit
 
 # Configuration for what to allow - set in child classes
 enum SelectionMode { FOLDER_ONLY, FILE_ONLY, FOLDER_OR_FILE }
@@ -110,7 +113,31 @@ func build_content() -> void:
 	selected_folder_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	selected_folder_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 	container.add_child(selected_folder_label)
+
+	# Import timeout setting
+	var timeout_container = HBoxContainer.new()
+	timeout_container.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	timeout_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	timeout_container.add_theme_constant_override("separation", 10)
+
+	timeout_label = Label.new()
+	timeout_label.text = "Import Timeout (seconds):"
+	timeout_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
+	timeout_container.add_child(timeout_label)
 	
+	timeout_input = LineEdit.new()
+	timeout_input.text = str(import_wait_timeout)
+	timeout_input.custom_minimum_size = Vector2(80, 30)
+	timeout_input.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	timeout_input.text_changed.connect(_on_timeout_changed)
+	timeout_container.add_child(timeout_input)
+	
+	container.add_child(timeout_container)
+
+	var spacer_before_buttons = Control.new()
+	spacer_before_buttons.custom_minimum_size = Vector2(0, 20)
+	container.add_child(spacer_before_buttons)
+
 	# Status label (hidden by default)
 	status_label = Label.new()
 	status_label.text = ""
@@ -212,6 +239,10 @@ func _on_folder_selected(path: String) -> void:
 		file_dialog.queue_free()
 		file_dialog = null
 
+func _on_timeout_changed(new_text: String) -> void:
+	if new_text.is_valid_int():
+		import_wait_timeout = new_text.to_int()
+
 func _on_run_button_press() -> void:
 	back_button.visible = false
 	exit_button.visible = true
@@ -220,6 +251,8 @@ func _on_run_button_press() -> void:
 	status_label.text = get_processing_message()
 	status_label.visible = true
 	selected_folder_label.visible = false
+	timeout_label.visible = false
+	timeout_input.visible = false
 
 	if import_generator_path.is_empty():
 		print("Error: import_generator_path not set in child class")
@@ -233,6 +266,7 @@ func _on_run_button_press() -> void:
 	var generator = generator_script.new()
 	generator.plugin = plugin
 	generator.selected_folder_path = selected_folder_path
+	generator.import_wait_timeout = import_wait_timeout
 	var err: Error = await generator.process()
 	if not err == OK:
 		print("Please review the logs, there was an error: " + error_string(err))

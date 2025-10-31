@@ -101,9 +101,6 @@ func process_character(scene: Node, char_file_path: String) -> Node:
 	print("Processing fixed character " + scene.name + " at " + char_file_path)
 	var char_name: String = scene.name.replace(".fbx", "")
 
-#	print("Adding character controller")
-	scene.set_script(character_controller)
-
 #	print("Deleting extra meshes")	
 	for child in scene.get_children():
 		if child is Skeleton3D:
@@ -137,6 +134,7 @@ func process_character(scene: Node, char_file_path: String) -> Node:
 	scene.add_child(anim_player)
 	anim_player.set_owner(scene)
 	anim_player.root_node = anim_player.get_path_to(scene)
+
 	# preload polygon anim lib if it exists in our output dir
 	var anim_lib: AnimationLibrary = null
 	if FileAccess.file_exists(GST_POLYGON_MASC_ANIM_LIB):
@@ -145,6 +143,13 @@ func process_character(scene: Node, char_file_path: String) -> Node:
 		if not err == OK:
 			push_error("Could not add Polygon Masculine to animation player")
 
+		print("Added Polygon Masculine Base Locomotion, adding animation blending and controller")
+#		print("Adding anim tree")
+		animation_tree_builder.add_animation_tree(scene, anim_player)
+	
+#		print("Adding character controller")
+		scene.set_script(character_controller)
+
 	# preload ual anim lib if it exists in our output dir
 	if FileAccess.file_exists(GST_QUAL_ANIM_LIB):
 		anim_lib = load(GST_QUAL_ANIM_LIB)
@@ -152,8 +157,7 @@ func process_character(scene: Node, char_file_path: String) -> Node:
 		if not err == OK:
 			push_error("Could not add UAL to animation player")
 
-#	print("Adding anim tree")
-	animation_tree_builder.add_animation_tree(scene, anim_player)
+		print("Added Quaternius UAL")
 
 #	print("Adding sound")
 

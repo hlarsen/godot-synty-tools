@@ -21,6 +21,13 @@ For a given pack, the addon scans and processes the FBX files for easier use in 
 
 See `doc/synty_pack_details.md` for more details and notes.
 
+### Non-Synty Stuff
+
+This addon also supports a few other assets because I have licenses or access to them and wanted to see if I could
+use them together.
+
+- `Quaternius Universal Animation Library`: Already Godot compatible but this makes it ready for our imported Synty assets
+
 ## Feedback and Future Work
 
 Please reach out to me at `@hlarsen` on the [Synty Discord](https://discord.com/invite/syntystudios) if you:
@@ -30,6 +37,12 @@ Please reach out to me at `@hlarsen` on the [Synty Discord](https://discord.com/
 - want to talk about custom tooling development for Godot
 
 Please file issues on GitHub for any errors or problems.
+
+### TODO
+
+- Just realized the scenes are probably tied to the addon because of the controller, need to look into that
+- Easy switching of texture alternates (resource?)
+- Refactor the menu system a bit for easier additions
 
 ## Notes
 

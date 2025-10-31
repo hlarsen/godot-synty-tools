@@ -3,13 +3,12 @@ extends BaseImportGenerator
 class_name ScifiCityImportGenerator
 
 var export_subdir: String = EXPORT_BASE_PATH.path_join("scifi_city")
-var selected_folder_path: String = ""
 var post_import_script: String = POST_IMPORT_SCRIPT_BASE_PATH.path_join("scifi_city.gd") 
 
 const BONE_MAP: String = "res://addons/godot-synty-tools/bone_maps/scifi_city_v4.tres"
-const IMPORT_WAIT_TIMEOUT: int = 60
 const KEEP_TEMP_DIR: bool = false
 const MODULE: String = "scifi_city"
+
 # TODO: debug files that don't work/are incorrect
 const FILE_MAP: Dictionary[String, String] = {
 	"SM_Bld_Background_": "PolygonScifi_Background_Building_Emissive", # no albedo texture
@@ -53,8 +52,8 @@ func process() -> Error:
 	var temp_dir_path: String = temp_dir.get_current_dir()
 	print("Using temp dir: " + temp_dir_path)
 
-	# copy text textures to the project first because we reference them in the post import of the fbx files
-	# TODO: we're just copying them directly to export_subdir and generating .import files before forcing a scan
+	# copy textures to the project first because we reference them in the post import of the fbx files
+	# NOTE: we're just copying them directly to export_subdir and generating .import files before forcing a scan
 	# we should copy to temp_dir first. generate, then copy to export_subdir like we do for everything else
 	print("Copying files from " + selected_folder_path.path_join("Textures") + " to " + export_subdir.path_join("Textures"))
 	err = FileUtils.copy_directory_recursive(selected_folder_path.path_join("Textures"), export_subdir.path_join("Textures"))
@@ -74,7 +73,7 @@ func process() -> Error:
 			push_error("Failed to create .import for " + tex_file)
 			return err
 
-	if not await reimport_files(texture_files):
+	if not await reimport_files(texture_files, import_wait_timeout):
 		push_error("Failed to import textures files")
 		return FAILED
 
@@ -122,7 +121,7 @@ func process() -> Error:
 		push_error("Error copying: " + error_string(err))
 		return err
 
-	if not await reimport_files(expected_imports, IMPORT_WAIT_TIMEOUT):
+	if not await reimport_files(expected_imports, import_wait_timeout):
 		push_error("Reimport before scene creation failed")
 		return FAILED
 
@@ -136,7 +135,7 @@ func process() -> Error:
 		push_error("Failed to apply materials")
 		return err
 
-	if not await reimport_files([], IMPORT_WAIT_TIMEOUT):
+	if not await reimport_files([], import_wait_timeout):
 		push_error("Final reimport failed")
 		return FAILED
 
@@ -186,7 +185,7 @@ func process_characters(file_src, temp_dir_path, export_subdir, expected_imports
 		push_error("Error copying: " + error_string(err))
 		return err
 
-	if not await reimport_files([original_char]):
+	if not await reimport_files([original_char], import_wait_timeout):
 		push_error("Failed to reimport Characters.fbx")
 		return FAILED
 
