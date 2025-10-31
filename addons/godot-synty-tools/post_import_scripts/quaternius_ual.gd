@@ -41,7 +41,7 @@ func process_scene(scene: Node, src_file: String) -> Node:
 	for anim_name in anim_player.get_animation_list():
 		var original_anim: Animation = anim_player.get_animation(anim_name)
 		var anim: Animation = original_anim.duplicate(true)
-		print("adding anim_name: " + anim_name)
+#		print("adding anim_name: " + anim_name)
 		anim_lib.add_animation(anim_name, anim)
 
 	var out_path: String = OUTPUT_DIR.path_join("Quaternius_UAL.tres")
@@ -59,6 +59,6 @@ func process_scene(scene: Node, src_file: String) -> Node:
 		anim_player.remove_animation_library("Quaternius_UAL")
 	
 	anim_player.add_animation_library("Quaternius_UAL", anim_lib)
-	print("Attached Quaternius_UAL library with animations:", anim_lib.get_animation_list())
+#	print("Attached Quaternius_UAL library with animations:", anim_lib.get_animation_list())
 
 	return scene

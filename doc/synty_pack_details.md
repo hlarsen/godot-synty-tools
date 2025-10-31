@@ -26,10 +26,9 @@ used.
 
 ## Sci-Fi City
 
-This is a work in progress, but at this point I believe it's fairly robust. Most FX_ files are currently not processed.
-
-If you've already run the addon against the Base Locomotion pack and the files are in the output directory, it will
-apply the Polygon Masculine library to the characters automatically.
+Not Processed:
+- Skybox (likely able to be fixed, except for shaders)
+- FX_ files: shaders need to be ported individually
 
 - Characters.fbx
 - Split into separate files
@@ -38,3 +37,6 @@ apply the Polygon Masculine library to the characters automatically.
 - Clean up imported object hierarchy (post import)
 - Fix materials where possible
 - Create scenes
+
+If you've already run the addon against the Base Locomotion pack and the files are in the output directory, it will
+apply the Polygon Masculine library to the characters automatically.
