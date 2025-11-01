@@ -70,7 +70,7 @@ func process() -> Error:
 
 	if custom_default_atlas_texture:
 		print("Copying atlas texture from " + custom_default_atlas_texture + " to " + temp_dir_textures)
-		err = FileUtils.copy_file(custom_default_atlas_texture, custom_textures_dir.path_join(custom_default_atlas_texture.get_file()))
+		err = FileUtils.copy_file(custom_default_atlas_texture, temp_dir_textures.path_join(custom_default_atlas_texture.get_file()))
 		if not err == OK:
 			push_error("Error copying: " + error_string(err))
 			return err
@@ -238,8 +238,12 @@ func process_characters(file_src, tmp_dir_models, export_subdir_models) -> Error
 
 	print("Found " + str(meshes.size()) + " in Characters.fbx")
 	for mesh in meshes:
+		var output_name: String = mesh.name
+#		if mesh.name.begins_with("SM_Chr_"):
+#			output_name = mesh.name.replace("SM_Chr_", "Character_")
+
 		print("Creating duplicate character file for mesh: " + mesh.name)
-		var save_path = tmp_dir_models.path_join(mesh.name + ".fbx")
+		var save_path = tmp_dir_models.path_join(output_name + ".fbx")
 		err = FileUtils.copy_file(file_src, save_path)
 		if not err == OK:
 			push_error("Error saving new char file: " + error_string(err))

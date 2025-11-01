@@ -52,7 +52,7 @@ func clean_scene_name(name: String) -> String:
 func process_scene(scene: Node, src_file: String) -> Node:
 	var src_base_fn: String = src_file.get_file()
 
-	if src_base_fn.begins_with("Character_"):
+	if src_base_fn.begins_with("Character_") or (src_base_fn.begins_with("SM_Chr_") and !src_base_fn.begins_with("SM_Chr_Attach_")):
 		scene = process_character(scene, src_file)
 	elif src_base_fn.begins_with("SM_"):
 		scene = process_sm_staticbody3d_root(scene, src_file)
