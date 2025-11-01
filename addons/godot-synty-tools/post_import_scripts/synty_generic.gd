@@ -101,6 +101,11 @@ func process_character(scene: Node, char_file_path: String) -> Node:
 	print("Processing fixed character " + scene.name + " at " + char_file_path)
 	var char_name: String = scene.name.replace(".fbx", "")
 
+	var char_skeleton: Skeleton3D = scene.get_node("Skeleton3D")
+	if not char_skeleton:
+		print("This model does not not contain a Skeleton3D, likely a character attachment, skipping")
+		return scene
+
 #	print("Deleting extra meshes")	
 	for child in scene.get_children():
 		if child is Skeleton3D:
@@ -117,7 +122,6 @@ func process_character(scene: Node, char_file_path: String) -> Node:
 			child.queue_free()
 
 	# flip skeleton facing to match Godot
-	var char_skeleton: Skeleton3D = scene.get_node("Skeleton3D")
 	char_skeleton.rotation.y = deg_to_rad(180)
 
 	# TODO: collider shapes?

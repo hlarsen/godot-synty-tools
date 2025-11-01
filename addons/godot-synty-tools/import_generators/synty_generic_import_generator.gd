@@ -122,16 +122,17 @@ func process() -> Error:
 			push_error("Error generating import file for " + file + ": " + error_string(err))
 			return err
 
+	# TODO: sometimes its not in the models dir?
 	# delete Characters.fbx (we created separate char files so we don't need it)
-	err = DirAccess.remove_absolute(export_subdir_models.path_join("Characters.fbx"))
-	if not err == OK:
-		push_error("Error deleting: " + error_string(err))
-		return err
-
-	err = DirAccess.remove_absolute(temp_dir_models.path_join("Characters.fbx"))
-	if not err == OK:
-		push_error("Error deleting: " + error_string(err))
-		return err
+#	err = DirAccess.remove_absolute(export_subdir_models.path_join("Characters.fbx"))
+#	if not err == OK:
+#		push_error("Error deleting: " + error_string(err))
+#		return err
+#
+#	err = DirAccess.remove_absolute(temp_dir_models.path_join("Characters.fbx"))
+#	if not err == OK:
+#		push_error("Error deleting: " + error_string(err))
+#		return err
 
 	print("Copy files from " + temp_dir_models + " to " + export_subdir_models)
 	err = FileUtils.copy_directory_recursive(temp_dir_models, export_subdir_models)
@@ -139,7 +140,7 @@ func process() -> Error:
 		push_error("Error copying: " + error_string(err))
 		return err
 
-	var new_files: Array[String] = FileUtils.list_files_recursive(export_subdir_models).filter(func(f): return !f.ends_with(".import"))
+	var new_files: Array[String] = FileUtils.list_files_recursive(export_subdir_models).filter(func(f): return !f.ends_with(".import")).filter(func(f): return !f.ends_with("Characters.fbx"))
 	if not await reimport_files(new_files, import_wait_timeout):
 		push_error("Reimport before scene creation failed")
 		return FAILED
@@ -241,6 +242,9 @@ func process_characters(file_src, tmp_dir_models, export_subdir_models) -> Error
 		var output_name: String = mesh.name
 #		if mesh.name.begins_with("SM_Chr_"):
 #			output_name = mesh.name.replace("SM_Chr_", "Character_")
+
+		if mesh.name.begins_with("SM_Chr_Attach_"):
+			continue
 
 		print("Creating duplicate character file for mesh: " + mesh.name)
 		var save_path = tmp_dir_models.path_join(output_name + ".fbx")
