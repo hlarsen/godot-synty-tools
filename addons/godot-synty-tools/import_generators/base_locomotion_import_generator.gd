@@ -159,7 +159,7 @@ func process() -> Error:
 func generate_tpose_anim_import_file(src_file: String, tmp_file_path: String) -> Error:
 	var config = ConfigFile.new()
 
-	# NOTE: minimum requirements for importing an FBX appear to be: deps > source_file and params/fbx_importer
+	# NOTE: minimum requirements for importing an FBX appear to be: params/fbx_importer
 	config.set_value("deps", "source_file", tmp_file_path)
 #	config.set_value("params", "import_script/path", post_import_script)
 	config.set_value("params", "nodes/import_as_skeleton_bones", true)
@@ -172,7 +172,7 @@ func generate_tpose_anim_import_file(src_file: String, tmp_file_path: String) ->
 func generate_animation_fbx_import_file(src_file: String, tmp_file_path: String, anim_library: AnimationLibrary, bone_map: BoneMap) -> Error:
 	var config = ConfigFile.new()
 
-	# NOTE: minimum requirements for importing an FBX appear to be: deps > source_file and params/fbx_importer
+	# NOTE: minimum requirements for importing an FBX appear to be: params/fbx_importer
 	config.set_value("deps", "source_file", tmp_file_path)
 	config.set_value("params", "import_script/path", post_import_script)
 	config.set_value("params", "fbx/importer", 0)

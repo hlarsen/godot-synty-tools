@@ -57,7 +57,7 @@ func process_scene(scene: Node, src_file: String) -> Node:
 	elif src_base_fn.begins_with("SM_"):
 		scene = process_sm_staticbody3d_root(scene, src_file)
 	else:
-		print("Not modifying unhandled file: " + src_file)
+		push_warning("Not modifying unhandled file: " + src_file)
 
 	return scene
 

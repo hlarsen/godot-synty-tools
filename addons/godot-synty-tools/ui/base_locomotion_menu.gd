@@ -3,7 +3,7 @@ extends BaseMenuWithSelection
 
 func _init():
 	MODULE = "Base Locomotion"
-	instruction_default = "Select the " + MODULE + " Animations folder"
+	instruction_default = "Select the " + MODULE + " Animations folder:"
 	import_generator_path = "res://addons/godot-synty-tools/import_generators/base_locomotion_import_generator.gd"
 	
 	selection_mode = SelectionMode.FOLDER_ONLY

@@ -3,7 +3,7 @@ extends BaseMenuWithSelection
 
 func _init():
 	MODULE = "Sci-Fi City"
-	instruction_default = "Select the " + MODULE + " folder"
+	instruction_default = "Select the " + MODULE + " folder:"
 	import_generator_path = "res://addons/godot-synty-tools/import_generators/scifi_city_import_generator.gd"
 	
 	selection_mode = SelectionMode.FOLDER_ONLY

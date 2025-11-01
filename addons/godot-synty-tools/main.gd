@@ -90,6 +90,7 @@ func _go_back():
 		menu_builders[previous_menu].call()
 	else:
 		popup_manager.popup_window.size = popup_manager.popup_default_size
+		popup_manager.popup_window.move_to_center()
 
 		_show_main_menu()
 

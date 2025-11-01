@@ -50,7 +50,7 @@ func process() -> Error:
 func generate_import_file(src_file: String, export_subdir: String) -> Error:
 	var config = ConfigFile.new()
 
-	# NOTE: minimum requirements for importing an FBX appear to be: deps > source_file and params/fbx_importer
+	# NOTE: minimum requirements for importing an FBX appear to be: params/fbx_importer
 	config.set_value("deps", "source_file", export_subdir.path_join(src_file.get_file()))
 	config.set_value("params", "nodes/import_as_skeleton_bones", true)
 	config.set_value("params", "import_script/path", post_import_script)

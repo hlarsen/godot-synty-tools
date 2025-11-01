@@ -11,28 +11,27 @@ const KEEP_TEMP_DIR: bool = false
 const MODULE: String = "scifi_city"
 
 # TODO: debug files that don't work/are incorrect
-const FILE_MAP: Dictionary[String, String] = {
-	"SM_Bld_Background_": "PolygonScifi_Background_Building_Emissive", # no albedo texture
-	"_Glass": "Glass_01_A",	# no albedo texture (match Glass?)
-	"Glass_": "Glass_01_A",	# no albedo texture (match Glass?)
+# TODO: right now this check is begins_with i think, that's not enough
+const file_map: Dictionary[String, String] = {
+	"SM_Bld_Background_": "PolygonScifi_Background_Building_Emissive.png", # no albedo texture
+	"_Glass": "Glass_01_A.png",	# no albedo texture (match Glass?)
+	"Glass_": "Glass_01_A.png",	# no albedo texture (match Glass?)
 #	"SM_HologramPods_": "PolygonScifi_Hologram_Outline", # no albedo texture
-	"SkyDome": "SimpleSky", # uses custom shader
-	"SM_Env_Graffiti_": "Billboards",
-	"SM_Env_Planet_Plane_01": "Planet_Material_01",
-	"SM_Env_Planet_Plane_02": "Planet_Material_02",
-	"SM_Env_Road": "PolygonSciFi_Road_01", # uses custom shader
-	"Fire_01_FX": "Polygon_Scifi_FX", # uses custom shader
-	# TODO: skipping the other FX files
-#	"SM_Prop_Hologram_Bottle_": "PolygonScifi_Hologram_Base",	# uses custom shader - matching issue?
-#	"SM_Prop_Bottle_": "PolygonScifi_Hologram_Outline",	# no albedo texture - matching issue?
-#	"SM_Prop_Hologram_": "PolygonScifi_Hologram_Base",	# uses custom shader - matching issue?
-#	"SM_Prop_LargeSign_": "PolygonScifi_Hologram_Outline",	# no albedo texture - matching issue?
-#	"SM_Prop_Jar": "Glass_01_Jar", # no albedo texture (match Jar?)
-	"SM_Prop_Posters_": "Billboards",
-	"SM_Sign_Ad_": "Signs",
-	"SM_Sign_Billboard_Large_": "Billboards",
-#	"SM_Sign_Neon_": "PolygonScifi_NeonSigns", # uses custom shader
-#	"SM_Sign_Neon_Flat_": "PolygonScifi_NeonSigns", # uses custom shader	
+	"SkyDome": "SimpleSky.png", # uses custom shader
+	"SM_Env_Graffiti_": "Billboards.png",
+	"SM_Env_Planet_Plane_01": "Planet_Material_01.png",
+	"SM_Env_Planet_Plane_02": "Planet_Material_02.png",
+	"SM_Env_Road": "PolygonSciFi_Road_01.png", # uses custom shader
+#	"SM_Prop_Hologram_Bottle_": "PolygonScifi_Hologram_Base.png",	# uses custom shader - matching issue?
+#	"SM_Prop_Bottle_": "PolygonScifi_Hologram_Outline.png",	# no albedo texture - matching issue?
+#	"SM_Prop_Hologram_": "PolygonScifi_Hologram_Base.png",	# uses custom shader - matching issue?
+#	"SM_Prop_LargeSign_": "PolygonScifi_Hologram_Outline.png",	# no albedo texture - matching issue?
+#	"SM_Prop_Jar": "Glass_01_Jar.png", # no albedo texture (match Jar?)
+	"SM_Prop_Posters_": "Billboards.png",
+	"SM_Sign_Ad_": "Signs.png",
+	"SM_Sign_Billboard_Large_": "Billboards.png",
+#	"SM_Sign_Neon_": "PolygonScifi_NeonSigns.png", # uses custom shader
+#	"SM_Sign_Neon_Flat_": "PolygonScifi_NeonSigns.png", # uses custom shader
 }
 
 func process() -> Error:
@@ -126,10 +125,6 @@ func process() -> Error:
 		push_error("Reimport before scene creation failed")
 		return FAILED
 
-	# we need to fix materials here, doing it in post import triggers a re-import
-	# theoretically we could move it to post import, but a quick try was causing material errors...
-	# maybe try another time, but this is working
-	# added bonus of creating scenes
 	print("Fixing materials and creating scenes")
 	err = create_scenes(expected_imports)
 	if err != OK:
@@ -147,7 +142,7 @@ func process() -> Error:
 func generate_fbx_import_file(src_file, tmp_file_path) -> Error:
 	var config = ConfigFile.new()
 
-	# NOTE: minimum requirements for importing an FBX appear to be: deps > source_file and params/fbx_importer
+	# NOTE: minimum requirements for importing an FBX appear to be: params/fbx_importer
 	config.set_value("deps", "source_file", tmp_file_path)
 	config.set_value("params", "import_script/path", post_import_script)
 	config.set_value("params", "fbx/importer", 0)
@@ -157,7 +152,7 @@ func generate_fbx_import_file(src_file, tmp_file_path) -> Error:
 func generate_character_fbx_import_file(src_file: String, tmp_file_path: String, bone_map: BoneMap) -> Error:
 	var config = ConfigFile.new()
 
-	# NOTE: minimum requirements for importing an FBX appear to be: deps > source_file and params/fbx_importer
+	# NOTE: minimum requirements for importing an FBX appear to be: params/fbx_importer
 	config.set_value("deps", "source_file", tmp_file_path)
 	config.set_value("params", "nodes/root_type", "CharacterBody3D")	# 
 	config.set_value("params", "import_script/path", post_import_script)
@@ -290,9 +285,9 @@ func fix_mesh_materials(mesh: MeshInstance3D) -> void:
 		new_mat.albedo_color = Color(1,1,1)
 
 		var file_to_use: String = default_atlas_texture
-		for key in FILE_MAP.keys():
+		for key in file_map.keys():
 			if mesh.name.begins_with(key):
-				file_to_use = FILE_MAP[key] + ".png"
+				file_to_use = file_map[key]
 				break
 
 		var tex_path: String = EXPORT_BASE_PATH.path_join(MODULE).path_join("/Textures/").path_join(file_to_use)
