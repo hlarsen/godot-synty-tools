@@ -1,5 +1,7 @@
 @tool
 extends BaseImportGenerator
+# NOTE: After trying a few I think this may just be a nice way to simplify the individual importers
+# There are a few different variations, plus some typos that make covering them all with one file unattractive imo
 class_name SyntyGenericImportGenerator
 
 # these are custom options passed in via the menu

@@ -44,3 +44,11 @@ Possible Issues:
 
 If you've already run the addon against the Base Locomotion pack and the files are in the output directory, it will
 apply the Polygon Masculine library to the characters automatically.
+
+## Synty Generic
+
+You can try using this with any synty release by specifying a given models, textures, default atlas file, and
+optionally post import script and bone map. It should output Godot scenes with fix materials.
+
+It's definitely not perfect due to differences between packs, but it does a fairly decent job. I'll probably work
+on this a bit more to see if we can make it easier to write new importer generators by using it as a base.

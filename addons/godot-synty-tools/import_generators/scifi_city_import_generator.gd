@@ -14,8 +14,8 @@ const MODULE: String = "scifi_city"
 # TODO: right now this check is begins_with i think, that's not enough
 const file_map: Dictionary[String, String] = {
 	"SM_Bld_Background_": "PolygonScifi_Background_Building_Emissive.png", # no albedo texture
-	"_Glass": "Glass_01_A.png",	# no albedo texture (match Glass?)
-	"Glass_": "Glass_01_A.png",	# no albedo texture (match Glass?)
+#	"_Glass": "Glass_01_A.png",	# no albedo texture (match Glass?)
+#	"Glass_": "Glass_01_A.png",	# no albedo texture (match Glass?)
 #	"SM_HologramPods_": "PolygonScifi_Hologram_Outline", # no albedo texture
 	"SkyDome": "SimpleSky.png", # uses custom shader
 	"SM_Env_Graffiti_": "Billboards.png",
@@ -286,7 +286,7 @@ func fix_mesh_materials(mesh: MeshInstance3D) -> void:
 
 		var file_to_use: String = default_atlas_texture
 		for key in file_map.keys():
-			if mesh.name.begins_with(key):
+			if key in mesh.name:
 				file_to_use = file_map[key]
 				break
 

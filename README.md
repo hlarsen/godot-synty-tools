@@ -18,6 +18,7 @@ For a given pack, the addon scans and processes the FBX files for easier use in 
 
 - `Base Locomotion`: Create animations and animation libraries properly mapped to Godot's SkeletonHumanoid3D
 - `Sci-Fi City`: Split characters into individuals, fix materials, import as cleaned up scenes
+- `Synty Generic`: You can run this against any pack and hopefully get back most models ready to go. No guarantees!
 
 See `doc/synty_pack_details.md` for more details and notes.
 
@@ -42,7 +43,6 @@ Please file issues on GitHub for any errors or problems.
 
 - Just realized the scenes are probably tied to the addon because of the controller, need to look into that
 - Easy switching of texture alternates (resource?)
-- Refactor the menu system a bit for easier additions
 
 ## Notes
 

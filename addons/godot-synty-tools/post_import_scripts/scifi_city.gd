@@ -5,8 +5,8 @@ const DEBUG_LOGGING: bool = false
 const GST_POLYGON_MASC_ANIM_LIB: String = "res://godot-synty-tools-output/base_locomotion/Polygon_Masculine.tres"
 const GST_QUAL_ANIM_LIB: String = "res://godot-synty-tools-output/quaternius_ual/Quaternius_UAL.tres"
 
-var animation_tree_builder = preload("res://addons/godot-synty-tools/utils/base_locomotion_animation_tree_builder.gd")
-var character_controller = preload("res://addons/godot-synty-tools/misc/character_controller.gd")
+var animation_tree_builder := preload("res://addons/godot-synty-tools/utils/base_locomotion_animation_tree_builder.gd")
+var character_controller := preload("res://addons/godot-synty-tools/misc/character_controller.gd")
 
 # This install script may be useful on its own, so far we're not doing any pre-processing like with Base Locomotion
 func _post_import(scene: Node) -> Object:
@@ -79,10 +79,10 @@ func process_sm_staticbody3d_root(scene: Node, src_file: String) -> Node:
 			child.set_owner(body)
 			set_owner_recursive(child, body)
 
-			# TODO: collider shapes?
 #			print("Adding collision")
-			var shape: CollisionShape3D = generate_box_collider(child)
-#			var shape: CollisionShape3D = generate_trimesh_collider(child)
+			# TODO: collider shapes?
+#			var shape: CollisionShape3D = generate_box_collider(child)
+			var shape: CollisionShape3D = generate_trimesh_collider(child)
 			if not shape:
 				return scene
 
@@ -255,3 +255,76 @@ func generate_char_collision_from_mesh(mesh_instance: MeshInstance3D) -> Collisi
 	collision.position = aabb.position + (aabb.size * 0.5)
 
 	return collision
+
+########
+########
+######## below is collider work to implement
+########
+########
+
+func process_node(node: Node):
+	if node is MeshInstance3D:
+		var mesh_name = node.name
+		
+		# Buildings - keep trimesh (static)
+		if mesh_name.begins_with("SM_Bld"):
+			create_trimesh_collision(node)
+		
+		# Environment - mostly static
+		elif mesh_name.begins_with("SM_Env"):
+			create_trimesh_collision(node)
+		
+		# Props - convex hull
+		elif mesh_name.begins_with("SM_Prop"):
+			create_convex_collision(node)
+		
+		# Weapons - simple box/capsule
+		elif mesh_name.begins_with("SM_Wep"):
+			create_simple_collision(node)
+		
+		# Vehicles - convex decomposition
+		elif mesh_name.begins_with("SM_Veh"):
+			create_convex_decomposition(node)
+		
+		# Signs - box approximation
+		elif mesh_name.begins_with("SM_Sign"):
+			create_box_collision(node)
+	
+	for child in node.get_children():
+		process_node(child)
+
+func create_trimesh_collision(mesh_instance: MeshInstance3D):
+	mesh_instance.create_trimesh_collision()
+
+func create_convex_collision(mesh_instance: MeshInstance3D):
+	mesh_instance.create_convex_collision()
+
+func create_convex_decomposition(mesh_instance: MeshInstance3D):
+	mesh_instance.create_multiple_convex_collisions()
+
+func create_simple_collision(mesh_instance: MeshInstance3D):
+	# Create approximate box/capsule based on AABB
+	var aabb = mesh_instance.get_aabb()
+	var static_body = StaticBody3D.new()
+	var collision_shape = CollisionShape3D.new()
+	
+	# Decide box vs capsule based on proportions
+	var size = aabb.size
+	if size.y > size.x * 2 and size.y > size.z * 2:
+		# Tall object, use capsule
+		var capsule = CapsuleShape3D.new()
+		capsule.radius = max(size.x, size.z) / 2.0
+		capsule.height = size.y
+		collision_shape.shape = capsule
+	else:
+		# Use box
+		var box = BoxShape3D.new()
+		box.size = size
+		collision_shape.shape = box
+	
+	collision_shape.position = aabb.get_center()
+	static_body.add_child(collision_shape)
+	mesh_instance.add_child(static_body)
+
+func create_box_collision(mesh_instance: MeshInstance3D):
+	create_simple_collision(mesh_instance)
