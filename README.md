@@ -5,6 +5,11 @@ Godot and Blender and wanting to learn more about the files, how they're structu
 
 No assets are included in this repo.
 
+NOTE: This is still useful for the Base Locomotion fixes, but I'd recommend using unidot
+and/or [this](https://github.com/DeniedWorks/synty-godot-converter) project and using your own custom script in
+Godot to reconfigure the nodes. The Unity packages have custom colliders that the source files don't, and it's
+easier to review the materials and things like that.
+
 ## Usage
 
 Install the addon to `addons` as normal and enable it in `Project > Project Settings > Plugins`. You should now be able
@@ -26,36 +31,9 @@ See `doc/synty_pack_details.md` for more details and notes.
 This addon also supports a few other assets because I have licenses or access to them and wanted to see if I could
 use them together.
 
-- `Quaternius Universal Animation Library`: Already Godot compatible but this makes it ready for our imported Synty assets
-
-## Feedback and Future Work
-
-Please reach out to me at `@hlarsen` on the [Synty Discord](https://discord.com/invite/syntystudios) if you:
-
-- want me to prioritize adding a specific pack by gifting me a license
-- have suggestions on the output of this addon (scene hierarchy, etc.)
-- want to talk about custom tooling development for Godot
-
-Please file issues on GitHub for any errors or problems.
-
-### TODO
-
-- Just realized the scenes are probably tied to the addon because of the controller, need to look into that
-- Easy switching of texture alternates (resource?)
-- Refactor the menu system a bit for easier additions
-
-## Notes
-
-I am not a 3D modeler or game developer, so if I'm doing anything obviously wrong please feel free to let me know. I've
-been talking with Claude and ChatGPT to help learn the 3D space, but honestly pretty much all the code it produced was
-rewritten because it was not great. I'm pretty anti-LLM, but having an "interactive" docs search works well with Godot
-because the docs are pretty good and contain a ton of _concepts_, but you can also double-check any suspected
-hallucinations in the source!
-
-My repo of [Blender Scripts](https://github.com/hlarsen/game-asset-blender-scripts) may be useful - it has code around
-meshes, bones, materials, and other stuff like that.
+- `Quaternius Universal Animation Library`: Already Godot compatible but this makes it ready for our imported Synty
+  assets
 
 ## License
 
-MIT, but if your commercial project does well please consider making a donation or gifting some packs, which will
-be added to the addon =)
+MIT
